@@ -193,6 +193,40 @@ assert!(proof.verify(&program.constraints, &trace));
 - **Completeness**: Ensures honest proofs are always accepted
 - **Zero-Knowledge**: Proves knowledge without revealing secrets
 
+### Making Values Public with Merkle Proofs
+
+In STARKs, when you want to make a specific value public while keeping the rest private, you use Merkle proofs. Here's how it works:
+
+1. **Commitment Phase**
+   - All values are committed to a Merkle tree
+   - The root of the tree becomes part of the proof
+   - This root represents all values without revealing them
+
+2. **Public Value Disclosure**
+   - To make a value public, you provide:
+     - The value itself
+     - A Merkle proof showing it's part of the committed tree
+   - The proof verifies the value's position in the tree
+   - Other values remain private
+
+3. **Verification**
+   - The verifier can check the Merkle proof
+   - Confirms the public value is authentic
+   - Can't learn anything about private values
+
+Example:
+```rust
+// Commit all values to a Merkle tree
+let merkle_root = commit_values(&values);
+
+// Make a specific value public
+let public_value = values[42];
+let merkle_proof = generate_merkle_proof(&values, 42);
+
+// Verify the public value
+assert!(verify_merkle_proof(merkle_root, public_value, merkle_proof));
+```
+
 ### Mathematical Foundations
 
 1. **Finite Fields**
