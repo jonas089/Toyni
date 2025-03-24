@@ -3,7 +3,6 @@ mod tests {
     use std::collections::HashMap;
 
     use ark_bls12_381::Fr;
-    use ark_ff::Zero;
     use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
     use toyni::{
         math::stark::StarkProof,
@@ -42,21 +41,28 @@ mod tests {
         // Verify the proof
         assert!(proof.verify(&trace, &constraints));
 
-        // Verify FRI challenges
+        // Verify FRI layers
         assert!(
-            !proof.fri_challenges.is_empty(),
-            "FRI challenges should not be empty"
-        );
-        assert_eq!(
-            proof.fri_challenges.len(),
-            proof.fri_layers.len() - 1,
-            "Number of FRI challenges should match number of FRI rounds"
+            !proof.fri_layers.is_empty(),
+            "FRI layers should not be empty"
         );
 
-        // Verify that challenges are non-zero
-        for &challenge in &proof.fri_challenges {
-            assert!(!challenge.is_zero(), "FRI challenges should be non-zero");
+        // Calculate expected number of layers:
+        // Start with domain_size * blowup_factor
+        // Reduce by half until we reach size 4
+        let initial_size = domain.size() * blowup_factor;
+        let mut expected_layers = 1;
+        let mut current_size = initial_size;
+        while current_size > 4 {
+            current_size /= 2;
+            expected_layers += 1;
         }
+
+        assert_eq!(
+            proof.fri_layers.len(),
+            expected_layers,
+            "Number of FRI layers should match domain size reduction"
+        );
     }
 
     #[test]

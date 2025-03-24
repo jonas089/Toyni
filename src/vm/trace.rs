@@ -4,6 +4,15 @@
 //! of a program running in the virtual machine. The trace is represented as a matrix
 //! where each column represents a program variable and each row represents a step
 //! in the program's execution.
+//!
+//! The `ExecutionTrace` struct provides methods to:
+//! - Create new traces with specified dimensions
+//! - Insert new execution steps
+//! - Retrieve execution steps by index
+//! - Print the trace in a tabular format
+//!
+//! This module is particularly useful for debugging and analyzing program execution
+//! by tracking the values of program variables throughout the execution steps.
 
 use std::collections::HashMap;
 
@@ -21,6 +30,12 @@ pub type ProgramVariable = String;
 /// * `height` - The number of execution steps in the trace
 /// * `width` - The number of program variables being tracked
 /// * `trace` - The actual trace data, stored as a vector of HashMaps
+///
+/// # Invariants
+///
+/// * The length of each column in the trace must equal the width
+/// * The number of columns in the trace must not exceed the height
+/// * All columns must contain the same set of variables
 pub struct ExecutionTrace {
     pub height: u64,
     pub width: u64,
@@ -38,6 +53,10 @@ impl ExecutionTrace {
     /// # Returns
     ///
     /// A new `ExecutionTrace` instance with the specified dimensions
+    ///
+    /// # Panics
+    ///
+    /// This function will not panic
     pub fn new(height: u64, width: u64) -> Self {
         Self {
             height,
@@ -57,6 +76,11 @@ impl ExecutionTrace {
     /// Panics if:
     /// * The number of variables in the column doesn't match the trace width
     /// * The trace has reached its maximum height
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the column contains all required variables
+    /// and that their values are valid for the program's context.
     pub fn insert_column(&mut self, column: HashMap<ProgramVariable, u64>) {
         assert!(column.len() == self.width as usize);
         assert!(self.trace.len() < self.height as usize);
@@ -72,6 +96,10 @@ impl ExecutionTrace {
     /// # Returns
     ///
     /// A reference to the HashMap containing the variable values for that step
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds
     pub fn get_column(&self, index: u64) -> &HashMap<ProgramVariable, u64> {
         &self.trace[index as usize]
     }
@@ -81,6 +109,17 @@ impl ExecutionTrace {
     /// # Arguments
     ///
     /// * `variables` - A vector of variable names specifying the order in which to print them
+    ///
+    /// # Panics
+    ///
+    /// Panics if any variable in the provided vector is not present in the trace
+    ///
+    /// # Format
+    ///
+    /// The output is formatted as a table where:
+    /// - Each row represents an execution step
+    /// - Each column represents a variable
+    /// - Values are separated by the '|' character
     pub fn print_trace(&self, variables: Vec<ProgramVariable>) {
         for i in 0..self.height {
             let column = self.get_column(i);

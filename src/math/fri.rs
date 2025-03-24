@@ -2,6 +2,10 @@
 //!
 //! This module provides functionality for the FRI protocol, which is used in the Stark proving system
 //! to prove the low-degree of polynomials. It includes functions for polynomial folding and interpolation.
+//!
+//! The FRI protocol is a key component of STARK proofs, providing a way to prove that a polynomial
+//! has a low degree by iteratively reducing the size of the evaluation domain while maintaining
+//! the low-degree property.
 
 use ark_bls12_381::Fr;
 use ark_ff::Field;
@@ -12,7 +16,8 @@ use ark_poly::{
 /// Performs one round of FRI folding on evaluations over a symmetric domain.
 ///
 /// The FRI folding operation reduces the size of the evaluation domain by half while
-/// maintaining the low-degree property of the polynomial.
+/// maintaining the low-degree property of the polynomial. This is done by combining
+/// pairs of evaluations using a random challenge value.
 ///
 /// # Arguments
 ///
@@ -26,6 +31,11 @@ use ark_poly::{
 /// # Panics
 ///
 /// Panics if the length of evaluations is not even
+///
+/// # Details
+///
+/// For each pair of points (x, -x), computes:
+/// f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
 pub fn fri_fold(evals: &[Fr], beta: Fr) -> Vec<Fr> {
     assert!(evals.len() % 2 == 0, "Evaluations length must be even");
     let mut result = Vec::with_capacity(evals.len() / 2);
@@ -47,6 +57,9 @@ pub fn fri_fold(evals: &[Fr], beta: Fr) -> Vec<Fr> {
 
 /// Interpolates a polynomial from a set of points.
 ///
+/// This function uses the Fast Fourier Transform (FFT) to efficiently interpolate
+/// a polynomial from its evaluations over a domain.
+///
 /// # Arguments
 ///
 /// * `xs` - The x-coordinates of the points
@@ -61,6 +74,13 @@ pub fn fri_fold(evals: &[Fr], beta: Fr) -> Vec<Fr> {
 /// Panics if:
 /// * The lengths of xs and ys are not equal
 /// * The domain size is not a power of 2
+///
+/// # Details
+///
+/// The interpolation is performed using the FFT algorithm, which requires that:
+/// 1. The domain size is a power of 2
+/// 2. The domain points are evenly spaced
+/// 3. The domain is closed under multiplication
 pub fn interpolate_poly(xs: &[Fr], ys: &[Fr]) -> DensePolynomial<Fr> {
     assert_eq!(xs.len(), ys.len(), "Mismatched lengths");
     let domain =

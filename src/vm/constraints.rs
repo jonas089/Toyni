@@ -1,7 +1,11 @@
 //! Constraint system for the STARK proving system.
 //!
 //! This module provides functionality for defining and evaluating constraints
-//! over the execution trace of a program.
+//! over the execution trace of a program. It supports both transition constraints
+//! (between consecutive rows) and boundary constraints (at specific rows).
+//!
+//! The constraint system is used to encode the program's logic and requirements
+//! into mathematical constraints that can be proven using the STARK protocol.
 
 use ark_bls12_381::Fr;
 use ark_ff::AdditiveGroup;
@@ -10,6 +14,15 @@ use std::collections::HashMap;
 use crate::vm::trace::{ExecutionTrace, ProgramVariable};
 
 /// Represents a constraint that must hold between consecutive rows of the execution trace.
+///
+/// Transition constraints are used to encode the program's logic by specifying
+/// relationships that must hold between consecutive states of the program.
+///
+/// # Fields
+///
+/// * `name` - The name of the constraint for debugging purposes
+/// * `variables` - The variables used in the constraint
+/// * `evaluate` - The function that evaluates the constraint
 pub struct TransitionConstraint {
     /// The name of the constraint for debugging purposes
     pub name: String,
@@ -20,6 +33,16 @@ pub struct TransitionConstraint {
 }
 
 /// Represents a constraint that must hold at a specific row of the execution trace.
+///
+/// Boundary constraints are used to specify initial conditions, final conditions,
+/// or other requirements that must hold at specific points in the program's execution.
+///
+/// # Fields
+///
+/// * `name` - The name of the constraint for debugging purposes
+/// * `row` - The row at which this constraint must hold
+/// * `variables` - The variables used in the constraint
+/// * `evaluate` - The function that evaluates the constraint
 pub struct BoundaryConstraint {
     /// The name of the constraint for debugging purposes
     pub name: String,
@@ -32,6 +55,14 @@ pub struct BoundaryConstraint {
 }
 
 /// The constraint system that holds all constraints for a program.
+///
+/// This struct maintains collections of both transition and boundary constraints,
+/// and provides methods to evaluate them over an execution trace.
+///
+/// # Fields
+///
+/// * `transition_constraints` - Transition constraints between consecutive rows
+/// * `boundary_constraints` - Boundary constraints at specific rows
 pub struct ConstraintSystem {
     /// Transition constraints between consecutive rows
     pub transition_constraints: Vec<TransitionConstraint>,
@@ -41,6 +72,10 @@ pub struct ConstraintSystem {
 
 impl ConstraintSystem {
     /// Creates a new empty constraint system.
+    ///
+    /// # Returns
+    ///
+    /// A new constraint system with no constraints
     pub fn new() -> Self {
         Self {
             transition_constraints: Vec::new(),
@@ -49,6 +84,18 @@ impl ConstraintSystem {
     }
 
     /// Adds a transition constraint to the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the constraint
+    /// * `variables` - The variables used in the constraint
+    /// * `evaluate` - The function that evaluates the constraint
+    ///
+    /// # Details
+    ///
+    /// The evaluation function takes two HashMaps representing consecutive rows
+    /// of the execution trace and returns a field element. The constraint is
+    /// satisfied if the evaluation returns zero.
     pub fn add_transition_constraint(
         &mut self,
         name: String,
@@ -63,6 +110,19 @@ impl ConstraintSystem {
     }
 
     /// Adds a boundary constraint to the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the constraint
+    /// * `row` - The row at which this constraint must hold
+    /// * `variables` - The variables used in the constraint
+    /// * `evaluate` - The function that evaluates the constraint
+    ///
+    /// # Details
+    ///
+    /// The evaluation function takes a HashMap representing a single row of the
+    /// execution trace and returns a field element. The constraint is satisfied
+    /// if the evaluation returns zero.
     pub fn add_boundary_constraint(
         &mut self,
         name: String,
@@ -88,6 +148,12 @@ impl ConstraintSystem {
     ///
     /// A vector of constraint evaluations, where each evaluation is a field element.
     /// If all constraints are satisfied, all evaluations should be zero.
+    ///
+    /// # Details
+    ///
+    /// The function evaluates both transition and boundary constraints in sequence.
+    /// For transition constraints, it evaluates between each pair of consecutive rows.
+    /// For boundary constraints, it evaluates at the specified rows.
     pub fn evaluate(&self, trace: &ExecutionTrace) -> Vec<Fr> {
         let mut evaluations = Vec::new();
 
@@ -122,6 +188,10 @@ impl ConstraintSystem {
     ///
     /// `true` if all constraints are satisfied (all evaluations are zero),
     /// `false` otherwise
+    ///
+    /// # Details
+    ///
+    /// This function calls `evaluate` and checks if all returned values are zero.
     pub fn is_satisfied(&self, trace: &ExecutionTrace) -> bool {
         self.evaluate(trace).iter().all(|&x| x == Fr::ZERO)
     }

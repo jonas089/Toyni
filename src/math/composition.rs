@@ -1,3 +1,10 @@
+//! Composition polynomial operations for the Stark proving system.
+//!
+//! This module provides functionality for creating and manipulating composition polynomials
+//! in the Stark proving system. The composition polynomial combines the execution trace
+//! with the constraint system to create a single polynomial that encodes all the
+//! program's constraints.
+
 use ark_bls12_381::Fr;
 use ark_ff::{Field, One, Zero};
 use ark_poly::{
@@ -15,6 +22,9 @@ use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 ///
 /// The final composition is:
 /// H(x) = T(x) + Z_H(x) * sum(C_i(x))
+///
+/// This polynomial is used to prove that the execution trace satisfies all constraints
+/// and that the program executed correctly.
 pub struct CompositionPolynomial {
     /// The composed polynomial
     polynomial: DensePolynomial<Fr>,
@@ -34,6 +44,12 @@ impl CompositionPolynomial {
     /// # Returns
     ///
     /// A new composition polynomial
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// * The domain size is not a power of 2
+    /// * The trace height is greater than the domain size
     pub fn new(
         trace: &ExecutionTrace,
         constraints: &ConstraintSystem,
@@ -101,21 +117,41 @@ impl CompositionPolynomial {
     }
 
     /// Returns the degree of the composition polynomial.
+    ///
+    /// # Returns
+    ///
+    /// The degree of the polynomial
     pub fn degree(&self) -> usize {
         self.polynomial.degree()
     }
 
     /// Evaluates the composition polynomial at a point.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - The point at which to evaluate
+    ///
+    /// # Returns
+    ///
+    /// The value of the polynomial at the given point
     pub fn evaluate(&self, point: Fr) -> Fr {
         self.polynomial.evaluate(&point)
     }
 
     /// Returns the coefficients of the composition polynomial.
+    ///
+    /// # Returns
+    ///
+    /// A slice containing the polynomial coefficients
     pub fn coefficients(&self) -> &[Fr] {
         &self.polynomial.coeffs
     }
 
     /// Returns evaluations of the composition polynomial over its domain.
+    ///
+    /// # Returns
+    ///
+    /// A vector of evaluations at each point in the domain
     pub fn evaluations(&self) -> Vec<Fr> {
         self.domain.fft(&self.polynomial.coeffs)
     }

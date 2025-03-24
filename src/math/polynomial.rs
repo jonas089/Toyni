@@ -1,7 +1,11 @@
 //! Polynomial operations for the Stark proving system.
 //!
 //! This module provides a basic implementation of polynomial arithmetic operations
-//! required for the Stark proving system.
+//! required for the Stark proving system. It includes operations like addition,
+//! multiplication, division, and evaluation over finite fields.
+//!
+//! The implementation is optimized for use in the Stark proving system, where
+//! polynomials are used to represent execution traces and constraints.
 
 use ark_bls12_381::Fr;
 use ark_ff::Zero;
@@ -12,6 +16,11 @@ use ark_poly::univariate::DensePolynomial;
 ///
 /// The polynomial is stored as a vector of coefficients, where the index represents
 /// the power of x. For example, [1, 2, 3] represents 3x² + 2x + 1.
+///
+/// # Invariants
+///
+/// * The coefficients vector should not have trailing zeros
+/// * All coefficients should be valid field elements
 pub struct Polynomial {
     /// The coefficients of the polynomial, stored in ascending order of power.
     pub coefficients: Vec<Fr>,
@@ -27,6 +36,11 @@ impl Polynomial {
     /// # Returns
     ///
     /// A new polynomial with the given coefficients
+    ///
+    /// # Details
+    ///
+    /// Trailing zeros are removed from the coefficients vector to maintain
+    /// the invariant that there are no trailing zeros.
     pub fn new(coefficients: Vec<Fr>) -> Self {
         // Remove trailing zeros
         let mut coeffs = coefficients;
@@ -42,6 +56,10 @@ impl Polynomial {
     ///
     /// The degree is the highest power of x with a non-zero coefficient.
     /// For the zero polynomial, the degree is 0.
+    ///
+    /// # Returns
+    ///
+    /// The degree of the polynomial
     pub fn degree(&self) -> usize {
         if self.coefficients.is_empty() {
             0
@@ -54,6 +72,10 @@ impl Polynomial {
     ///
     /// The leading coefficient is the coefficient of the highest power term.
     /// For the zero polynomial, returns 0.
+    ///
+    /// # Returns
+    ///
+    /// The leading coefficient
     pub fn leading_coefficient(&self) -> Fr {
         self.coefficients.last().copied().unwrap_or(Fr::zero())
     }
@@ -68,6 +90,11 @@ impl Polynomial {
     ///
     /// Option containing a tuple of (quotient, remainder) if division is possible,
     /// None if the divisor is zero or empty
+    ///
+    /// # Details
+    ///
+    /// The division is performed using the standard long division algorithm
+    /// over the finite field. The remainder will have degree less than the divisor.
     pub fn divide(&self, divisor: &Polynomial) -> Option<(Polynomial, Polynomial)> {
         if divisor.coefficients.is_empty() || divisor.leading_coefficient().is_zero() {
             return None;
@@ -109,6 +136,11 @@ impl Polynomial {
     /// # Returns
     ///
     /// A string representation of the polynomial in standard form
+    ///
+    /// # Details
+    ///
+    /// The polynomial is displayed in standard form with terms in descending
+    /// order of degree. Zero terms are omitted.
     pub fn to_string(&self) -> String {
         if self.coefficients.is_empty() {
             return "0".to_string();
@@ -144,6 +176,10 @@ impl Polynomial {
     /// # Returns
     ///
     /// The sum of the two polynomials
+    ///
+    /// # Details
+    ///
+    /// Addition is performed coefficient-wise over the finite field.
     pub fn add(&self, other: &Polynomial) -> Polynomial {
         let max_len = std::cmp::max(self.coefficients.len(), other.coefficients.len());
         let mut result = vec![Fr::zero(); max_len];
@@ -168,6 +204,11 @@ impl Polynomial {
     /// # Returns
     ///
     /// The product of the two polynomials
+    ///
+    /// # Details
+    ///
+    /// Multiplication is performed using the standard polynomial multiplication
+    /// algorithm over the finite field.
     pub fn multiply(&self, other: &Polynomial) -> Polynomial {
         if self.coefficients.is_empty() || other.coefficients.is_empty() {
             return Polynomial::new(vec![]);
@@ -193,6 +234,10 @@ impl Polynomial {
     /// # Returns
     ///
     /// The value of the polynomial at x
+    ///
+    /// # Details
+    ///
+    /// Evaluation is performed using Horner's method for efficiency.
     pub fn evaluate(&self, x: Fr) -> Fr {
         if self.coefficients.is_empty() {
             return Fr::zero();
@@ -205,6 +250,15 @@ impl Polynomial {
         result
     }
 
+    /// Converts a dense polynomial from the ark-poly crate to our polynomial type.
+    ///
+    /// # Arguments
+    ///
+    /// * `poly` - The dense polynomial to convert
+    ///
+    /// # Returns
+    ///
+    /// A new polynomial with the same coefficients
     pub fn from_dense_poly(poly: DensePolynomial<Fr>) -> Self {
         Polynomial::new(poly.coeffs)
     }

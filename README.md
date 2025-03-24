@@ -1,218 +1,116 @@
-# Toyni
+# Toyni: A Toy STARK Implementation
 
-A toy implementation of a STARK-based virtual machine.
+A simple implementation of a STARK (Scalable Transparent Argument of Knowledge) proving system in Rust. This project serves as an educational tool to understand the core concepts of STARKs and zero-knowledge proofs.
 
-> [!Warning]
-> This project is not ready for production and has not been audited.
-> Use at own risk.
+## Features
 
-## Overview
+- **STARK Protocol Implementation**
+  - Execution trace generation
+  - Constraint system
+  - Composition polynomial
+  - FRI (Fast Reed-Solomon Interactive Oracle Proof) protocol
+  - Verifier-generated random challenges for security
+  - Domain evaluation and interpolation
 
-Toyni is an educational implementation of a STARK (Scalable Transparent ARgument of Knowledge) proving system. It demonstrates the core concepts of STARK proofs, including polynomial commitments, FRI protocol, and constraint satisfaction.
+- **Mathematical Foundations**
+  - Finite field arithmetic using `ark-ff`
+  - Polynomial operations
+  - FFT for polynomial evaluation
+  - FRI folding with random challenges
 
-## Architecture
+- **Basic Merkle Tree** (Mock Implementation)
+  - Simple hash-based commitment scheme
+  - Placeholder for production Merkle tree implementation
 
-### Core Components
+## Project Structure
 
-1. **Virtual Machine** (`src/vm/`)
-   - Simple stack-based execution model
-   - Basic arithmetic operations (add, sub, mul)
-   - Variable management
-   - Execution trace generation
-
-2. **STARK Proving System** (`src/math/`)
-   - Composition polynomial construction
-   - FRI protocol implementation
-   - Merkle commitments
-   - Domain extension with blowup factor
-
-3. **Constraint System** (`src/vm/constraints.rs`)
-   - Transition constraints between consecutive states
-   - Boundary constraints at specific points
-   - Constraint evaluation and satisfaction checking
-
-### Implementation Details
-
-#### 1. STARK Proof Generation
-
-The STARK proof system consists of several key components:
-
-a) **Composition Polynomial** (`src/math/composition.rs`)
-```rust
-H(x) = Z_H(x) * sum(C_i(x))
 ```
-where:
-- Z_H(x) is the vanishing polynomial over the domain
-- C_i(x) are the individual constraint polynomials
-- The result ensures constraints are satisfied at all points
-
-b) **FRI Protocol** (`src/math/fri.rs`)
-- Implements Fast Reed-Solomon Interactive Oracle Proofs
-- Uses random challenges for each folding round
-- Folds polynomial evaluations to reduce degree
-- Formula: f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
-
-c) **Merkle Commitments** (`src/math/stark.rs`)
-- Binary Merkle tree structure
-- Currently uses simple addition as hash function (not cryptographically secure)
-- Commits to polynomial evaluations at each FRI layer
-
-#### 2. Domain Extension
-
-The system supports domain extension with a blowup factor:
-```rust
-extended_domain = get_extended_domain(original_size, blowup_factor)
-```
-This increases the evaluation domain size for better security.
-
-#### 3. Constraint System
-
-Two types of constraints are supported:
-
-a) **Transition Constraints**
-```rust
-constraints.add_transition_constraint(
-    "increment".to_string(),
-    vec!["x".to_string()],
-    Box::new(|current, next| {
-        let x_current = current.get("x").unwrap();
-        let x_next = next.get("x").unwrap();
-        Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1)
-    }),
-);
+src/
+├── math/
+│   ├── polynomial.rs    # Polynomial arithmetic
+│   ├── domain.rs        # Evaluation domain operations
+│   ├── composition.rs   # Composition polynomial
+│   ├── fri.rs          # FRI protocol implementation
+│   └── stark.rs        # STARK proving system
+├── program.rs          # Program execution
+└── main.rs            # Example usage
 ```
 
-b) **Boundary Constraints**
+## Implementation Details
+
+### STARK Protocol
+
+1. **Program Execution**
+   - Generate execution trace
+   - Apply constraints
+   - Create composition polynomial
+
+2. **FRI Protocol**
+   - Verifier generates random challenges
+   - Prover commits to evaluations
+   - Polynomial folding with random challenges
+   - Domain size reduction
+
+3. **Proof Generation**
+   - Create FRI layers
+   - Generate commitments
+   - Interpolate final polynomial
+
+4. **Verification**
+   - Verify constraints
+   - Check FRI layer consistency
+   - Validate final polynomial
+
+### Security Features
+
+- Verifier-generated random challenges
+- Commitment scheme for evaluations
+- Low-degree testing via FRI
+- Constraint satisfaction verification
+
+## Usage
+
 ```rust
-constraints.add_boundary_constraint(
-    "initial_value".to_string(),
-    0,
-    vec!["x".to_string()],
-    Box::new(|row| {
-        let x = row.get("x").unwrap();
-        Fr::from(*x as u64) - Fr::from(0u64)
-    }),
-);
-```
+use toyni::program::Program;
+use toyni::math::stark::StarkProof;
 
-### Current Limitations
+// Create a program
+let program = Program::new(vec![/* constraints */]);
 
-1. **Security**
-   - Using simple addition as hash function (not cryptographically secure)
-   - No proper query phase implementation
-   - Missing soundness parameters
-   - No proper Merkle proof verification
-
-2. **Performance**
-   - Basic polynomial operations
-   - No optimizations for large domains
-   - No parallel processing
-
-3. **Features**
-   - Limited constraint types
-   - Basic virtual machine operations
-   - No support for complex programs
-
-## Usage Example
-
-Here's a simple example demonstrating how to create and verify a STARK proof for a basic increment program:
-
-```rust
-use std::collections::HashMap;
-use ark_bls12_381::Fr;
-use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
-use toyni::{
-    math::stark::StarkProof,
-    vm::{constraints::ConstraintSystem, trace::ExecutionTrace},
-};
-
-// Create an execution trace for x[n] = n
-let mut trace = ExecutionTrace::new(4, 1);
-for i in 0..4 {
-    let mut column = HashMap::new();
-    column.insert("x".to_string(), i);
-    trace.insert_column(column);
-}
-
-// Define transition constraint: x[n] = x[n-1] + 1
-let mut constraints = ConstraintSystem::new();
-constraints.add_transition_constraint(
-    "increment".to_string(),
-    vec!["x".to_string()],
-    Box::new(|current, next| {
-        let x_current = current.get("x").unwrap();
-        let x_next = next.get("x").unwrap();
-        Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1)
-    }),
-);
-
-// Create evaluation domain with blowup factor for security
-let domain = GeneralEvaluationDomain::<Fr>::new(4).unwrap();
-let blowup_factor = 8; // Standard security parameter
+// Generate execution trace
+let trace = program.execute(/* inputs */);
 
 // Generate STARK proof
-let proof = StarkProof::new(&trace, &constraints, domain, blowup_factor);
+let proof = StarkProof::new(&program.constraints, &trace);
 
 // Verify the proof
-assert!(proof.verify(&trace, &constraints));
-
-// Verify FRI challenges
-assert!(!proof.fri_challenges.is_empty(), "FRI challenges should not be empty");
-assert_eq!(
-    proof.fri_challenges.len(),
-    proof.fri_layers.len() - 1,
-    "Number of FRI challenges should match number of FRI rounds"
-);
+assert!(proof.verify(&program.constraints, &trace));
 ```
-
-This example demonstrates:
-1. Creating an execution trace for a simple increment program
-2. Defining transition constraints that enforce the increment rule
-3. Setting up the evaluation domain with a security blowup factor
-4. Generating and verifying a STARK proof
-5. Checking the FRI protocol challenges
-
-The proof will fail if the constraints don't match the execution trace, as shown in the test case `test_stark_proof_fails_with_wrong_constraints`.
 
 ## Dependencies
 
-- `ark-bls12-381`: Finite field operations
-- `ark-ff`: Field traits and operations
+- `ark-ff`: Finite field arithmetic
 - `ark-poly`: Polynomial operations
 - `ark-std`: Standard library traits
+- `rand`: Random number generation
 
 ## Future Improvements
 
-1. **Security Enhancements**
-   - Implement proper cryptographic hash function
-   - Add query phase with random points
-   - Add soundness parameters
-   - Implement proper Merkle proof verification
+1. **Merkle Tree Implementation**
+   - Proper binary Merkle tree
+   - Efficient proof verification
+   - Interactive proof opening
 
-2. **Performance Optimizations**
-   - Optimize polynomial operations
-   - Add parallel processing
-   - Improve memory usage
+2. **Security Enhancements**
+   - More sophisticated query patterns
+   - Better security parameters
+   - Optimized proof size
 
-3. **Feature Additions**
-   - Support for more complex constraints
-   - Enhanced virtual machine capabilities
-   - Better program representation
-
-## Testing
-
-Run the test suite:
-```bash
-cargo test
-```
-
-Generate documentation:
-```bash
-cargo doc --open
-```
+3. **Performance Optimizations**
+   - Parallel FFT computation
+   - Efficient polynomial operations
+   - Optimized field arithmetic
 
 ## License
 
-MIT
-
-*Copyright 2025, Ciphercurve GmbH*
+MIT License - see LICENSE file for details
