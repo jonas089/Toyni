@@ -162,7 +162,12 @@ impl StarkProof {
     }
 
     /// Verifies the STARK proof
-    pub fn verify(&self) -> bool {
+    pub fn verify(&self, trace: &ExecutionTrace, constraints: &ConstraintSystem) -> bool {
+        // First verify that the trace satisfies all constraints
+        if !constraints.is_satisfied(trace) {
+            return false;
+        }
+
         // Check that the final polynomial has low degree
         if self.final_poly.degree() > 1 {
             return false;
