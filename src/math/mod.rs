@@ -7,3 +7,4 @@ pub mod composition;
 pub mod domain;
 pub mod fri;
 pub mod polynomial;
+pub mod stark;
