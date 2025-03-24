@@ -9,7 +9,7 @@
 //! like domain extension and random query points for verification.
 
 use ark_bls12_381::Fr;
-use ark_ff::{Field, UniformRand, Zero};
+use ark_ff::{Field, UniformRand};
 use ark_poly::{
     EvaluationDomain, Evaluations, GeneralEvaluationDomain, Polynomial, univariate::DensePolynomial,
 };
