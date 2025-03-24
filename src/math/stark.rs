@@ -67,6 +67,8 @@ pub struct StarkProof {
     pub final_poly: DensePolynomial<Fr>,
     /// Random challenges for each FRI round
     pub fri_challenges: Vec<Fr>,
+    /// The evaluation domain
+    pub domain: GeneralEvaluationDomain<Fr>,
 }
 
 impl StarkProof {
@@ -146,6 +148,7 @@ impl StarkProof {
             fri_layers,
             final_poly,
             fri_challenges,
+            domain: extended_domain,
         }
     }
 
@@ -168,21 +171,34 @@ impl StarkProof {
             return false;
         }
 
+        // Verify the composition polynomial was constructed correctly
+        let expected_composition = CompositionPolynomial::new(trace, constraints, self.domain);
+        if self.composition_poly.evaluations() != expected_composition.evaluations() {
+            return false;
+        }
+
         // Check that the final polynomial has low degree
         if self.final_poly.degree() > 1 {
             return false;
         }
 
-        // Check that the composition polynomial evaluates to zero at all points
-        let evals = self.composition_poly.evaluations();
-        for eval in evals.iter() {
-            if !eval.is_zero() {
+        // Generate random query points for the verifier
+        let mut rng = thread_rng();
+        let num_queries = 16; // Security parameter
+        let mut query_points = Vec::new();
+        for _ in 0..num_queries {
+            query_points.push(Fr::rand(&mut rng));
+        }
+
+        // Verify composition polynomial at random points
+        for &point in &query_points {
+            if !self.composition_poly.evaluate(point).is_zero() {
                 return false;
             }
         }
 
         // Verify FRI layers with challenges
-        let mut current_evals = evals.clone();
+        let mut current_evals = self.composition_poly.evaluations();
         for (i, layer) in self.fri_layers.iter().enumerate() {
             // Verify Merkle commitment
             if !self.verify_merkle_proof(&layer.commitment, &layer.evaluations) {

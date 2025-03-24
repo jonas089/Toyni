@@ -115,11 +115,18 @@ constraints.add_boundary_constraint(
 
 ## Usage Example
 
-```rust
-use toyni::vm::{trace::ExecutionTrace, constraints::ConstraintSystem};
-use toyni::math::stark::StarkProof;
+Here's a simple example demonstrating how to create and verify a STARK proof for a basic increment program:
 
-// Create an execution trace
+```rust
+use std::collections::HashMap;
+use ark_bls12_381::Fr;
+use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
+use toyni::{
+    math::stark::StarkProof,
+    vm::{constraints::ConstraintSystem, trace::ExecutionTrace},
+};
+
+// Create an execution trace for x[n] = n
 let mut trace = ExecutionTrace::new(4, 1);
 for i in 0..4 {
     let mut column = HashMap::new();
@@ -127,7 +134,7 @@ for i in 0..4 {
     trace.insert_column(column);
 }
 
-// Define constraints
+// Define transition constraint: x[n] = x[n-1] + 1
 let mut constraints = ConstraintSystem::new();
 constraints.add_transition_constraint(
     "increment".to_string(),
@@ -139,7 +146,7 @@ constraints.add_transition_constraint(
     }),
 );
 
-// Create evaluation domain with blowup factor
+// Create evaluation domain with blowup factor for security
 let domain = GeneralEvaluationDomain::<Fr>::new(4).unwrap();
 let blowup_factor = 8; // Standard security parameter
 
@@ -147,8 +154,25 @@ let blowup_factor = 8; // Standard security parameter
 let proof = StarkProof::new(&trace, &constraints, domain, blowup_factor);
 
 // Verify the proof
-assert!(proof.verify());
+assert!(proof.verify(&trace, &constraints));
+
+// Verify FRI challenges
+assert!(!proof.fri_challenges.is_empty(), "FRI challenges should not be empty");
+assert_eq!(
+    proof.fri_challenges.len(),
+    proof.fri_layers.len() - 1,
+    "Number of FRI challenges should match number of FRI rounds"
+);
 ```
+
+This example demonstrates:
+1. Creating an execution trace for a simple increment program
+2. Defining transition constraints that enforce the increment rule
+3. Setting up the evaluation domain with a security blowup factor
+4. Generating and verifying a STARK proof
+5. Checking the FRI protocol challenges
+
+The proof will fail if the constraints don't match the execution trace, as shown in the test case `test_stark_proof_fails_with_wrong_constraints`.
 
 ## Dependencies
 
