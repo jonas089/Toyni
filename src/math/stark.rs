@@ -160,11 +160,9 @@ impl<'a> StarkVerifier<'a> {
 
 #[cfg(test)]
 mod tests {
-    use ark_ff::Field;
-
     use super::*;
+    use ark_ff::Field;
     use std::collections::HashMap;
-
     #[test]
     fn test_valid_proof() {
         let mut trace = ExecutionTrace::new(4, 1);

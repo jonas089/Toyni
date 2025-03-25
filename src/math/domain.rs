@@ -2,7 +2,6 @@
 //!
 //! This module provides functionality for working with evaluation domains in the Stark proving system.
 //! It includes functions for creating and extending evaluation domains, as well as operations on domain points.
-
 use ark_bls12_381::Fr;
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 
@@ -23,6 +22,7 @@ use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 /// # Panics
 ///
 /// Panics if the domain size is not even
+///
 pub fn fold_domain_points(domain_points: Vec<Fr>, domain_size: usize) -> Vec<Fr> {
     domain_points
         .iter()
