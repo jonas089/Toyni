@@ -212,13 +212,15 @@ mod tests {
 
     #[test]
     fn test_generate_and_verify_stark_proof() {
-        let mut trace = ExecutionTrace::new(4, 1);
+        let mut trace = ExecutionTrace::new(4, 2);
+        let mut y = 2;
         for i in 0..4 {
             let mut column = HashMap::new();
             column.insert("x".to_string(), i);
+            column.insert("y".to_string(), y);
+            y = y * y; // Square it for the next round
             trace.insert_column(column);
         }
-
         let mut constraints = ConstraintSystem::new();
         constraints.add_transition_constraint(
             "increment".to_string(),
@@ -227,6 +229,15 @@ mod tests {
                 let x_current = current.get("x").unwrap();
                 let x_next = next.get("x").unwrap();
                 Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1)
+            }),
+        );
+        constraints.add_transition_constraint(
+            "exponential".to_string(),
+            vec!["y".to_string()],
+            Box::new(|current, next| {
+                let y_current = current.get("y").unwrap();
+                let y_next = next.get("y").unwrap();
+                Fr::from(*y_next as u64) - Fr::from(y_current.pow(2))
             }),
         );
         constraints.add_boundary_constraint(
