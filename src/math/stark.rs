@@ -1,3 +1,23 @@
+//! STARK proof generation and verification.
+//!
+//! This module implements the core STARK proving system, which allows proving the correct
+//! execution of a program without revealing the underlying data. The system uses:
+//! - Composition polynomials to encode program constraints
+//! - FRI (Fast Reed-Solomon Interactive Oracle Proof) for low-degree testing
+//! - Random sampling for constraint verification
+//!
+//! # Security Considerations
+//!
+//! The current implementation is not yet zero-knowledge because:
+//! - The execution trace is exposed to the verifier
+//! - Random challenges are generated using `rand::thread_rng()`
+//! - No Merkle commitments are used for trace values
+//!
+//! To achieve zero-knowledge properties, we need to:
+//! - Implement Merkle tree commitments for the trace
+//! - Use Fiat-Shamir transform for challenge generation
+//! - Add trace blinding and random masks
+
 use ark_bls12_381::Fr;
 use ark_ff::{UniformRand, Zero};
 use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain, Polynomial};
@@ -6,18 +26,46 @@ use crate::math::composition::CompositionPolynomial;
 use crate::math::fri::fri_fold;
 use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 
-/// Represents a STARK proof.
+/// Represents a STARK proof that demonstrates correct program execution.
+///
+/// A STARK proof consists of:
+/// 1. Composition polynomial evaluations over an extended domain
+/// 2. FRI proof layers for low-degree testing
+/// 3. FRI challenge values used in the proof
+///
+/// The proof can be verified by anyone without revealing the actual program execution.
 pub struct StarkProof {
-    /// The composition polynomial evaluations over the extended domain
+    /// The composition polynomial evaluations over the extended domain.
+    /// These evaluations encode all program constraints and the execution trace.
     pub composition_evals: Vec<Fr>,
-    /// The FRI proof layers
+    /// The FRI proof layers used for low-degree testing.
+    /// Each layer reduces the size of the proof while maintaining security.
     pub fri_layers: Vec<Vec<Fr>>,
-    /// The FRI challenge values
+    /// The FRI challenge values used in each layer.
+    /// These values are currently generated randomly but should be derived
+    /// from commitments in a zero-knowledge implementation.
     pub fri_challenges: Vec<Fr>,
 }
 
 impl StarkProof {
-    /// Generates a STARK proof.
+    /// Generates a new STARK proof for the given execution trace and constraints.
+    ///
+    /// # Arguments
+    ///
+    /// * `trace` - The execution trace of the program
+    /// * `constraints` - The constraint system defining program rules
+    /// * `blowup_factor` - The factor by which to extend the evaluation domain
+    ///
+    /// # Returns
+    ///
+    /// A new STARK proof that can be verified by any party
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation is not zero-knowledge because:
+    /// - The trace is exposed to the verifier
+    /// - Random challenges are generated using `rand::thread_rng()`
+    /// - No Merkle commitments are used
     pub fn new(
         trace: &ExecutionTrace,
         constraints: &ConstraintSystem,
@@ -52,6 +100,31 @@ impl StarkProof {
         }
     }
 
+    /// Verifies that the STARK proof is valid for the given trace and constraints.
+    ///
+    /// The verification process:
+    /// 1. Samples random rows from the trace
+    /// 2. Checks that all constraints are satisfied at those rows
+    /// 3. Verifies that the composition polynomial vanishes at those points
+    /// 4. Checks FRI layer consistency
+    /// 5. Verifies the final polynomial degree
+    ///
+    /// # Arguments
+    ///
+    /// * `trace` - The execution trace to verify
+    /// * `constraints` - The constraint system to check
+    /// * `blowup_factor` - The domain extension factor used in proof generation
+    ///
+    /// # Returns
+    ///
+    /// `true` if the proof is valid, `false` otherwise
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation leaks information about the trace because:
+    /// - The verifier has direct access to trace rows
+    /// - No Merkle proofs are used for trace access
+    /// - The sampling is not zero-knowledge
     pub fn verify(
         &self,
         trace: &ExecutionTrace,

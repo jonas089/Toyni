@@ -1,9 +1,32 @@
-//! Composition polynomial operations for the Stark proving system.
+//! Composition polynomial operations for the STARK proving system.
 //!
 //! This module provides functionality for creating and manipulating composition polynomials
-//! in the Stark proving system. The composition polynomial combines the execution trace
+//! in the STARK proving system. The composition polynomial combines the execution trace
 //! with the constraint system to create a single polynomial that encodes all the
 //! program's constraints.
+//!
+//! # Mathematical Details
+//!
+//! The composition polynomial H(x) is constructed as:
+//! ```
+//! H(x) = T(x) + Z_H(x) * sum(C_i(x))
+//! ```
+//! where:
+//! - T(x) is the trace polynomial
+//! - Z_H(x) is the vanishing polynomial over the evaluation domain
+//! - C_i(x) are the constraint polynomials
+//!
+//! # Security Considerations
+//!
+//! The current implementation:
+//! - Does not include random masks for zero-knowledge
+//! - Exposes the full trace polynomial
+//! - Uses direct polynomial evaluation instead of commitments
+//!
+//! To achieve zero-knowledge properties, we need to:
+//! - Add random masks to the composition polynomial
+//! - Commit to the trace polynomial using Merkle trees
+//! - Use polynomial commitments for evaluation
 
 use ark_bls12_381::Fr;
 use ark_ff::{Field, One, Zero};
@@ -25,10 +48,17 @@ use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 ///
 /// This polynomial is used to prove that the execution trace satisfies all constraints
 /// and that the program executed correctly.
+///
+/// # Security Note
+///
+/// The current implementation is not zero-knowledge because:
+/// - The trace polynomial is exposed
+/// - No random masks are used
+/// - The composition is not blinded
 pub struct CompositionPolynomial {
-    /// The composed polynomial
+    /// The composed polynomial H(x)
     polynomial: DensePolynomial<Fr>,
-    /// The evaluation domain
+    /// The evaluation domain over which the polynomial is defined
     domain: GeneralEvaluationDomain<Fr>,
 }
 
@@ -37,19 +67,26 @@ impl CompositionPolynomial {
     ///
     /// # Arguments
     ///
-    /// * `trace` - The execution trace
-    /// * `constraints` - The constraint system
+    /// * `trace` - The execution trace containing program state
+    /// * `constraints` - The constraint system defining program rules
     /// * `domain` - The evaluation domain (can be extended)
     ///
     /// # Returns
     ///
-    /// A new composition polynomial
+    /// A new composition polynomial that encodes all constraints
     ///
     /// # Panics
     ///
     /// Panics if:
     /// * The domain size is not a power of 2
     /// * The trace height is greater than the domain size
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation leaks information about the trace because:
+    /// - The trace polynomial is directly included
+    /// - No random masks are applied
+    /// - The composition is not blinded
     pub fn new(
         trace: &ExecutionTrace,
         constraints: &ConstraintSystem,
@@ -116,6 +153,16 @@ impl CompositionPolynomial {
         }
     }
 
+    /// Creates a composition polynomial from pre-computed evaluations.
+    ///
+    /// # Arguments
+    ///
+    /// * `evals` - The polynomial evaluations over the domain
+    /// * `domain` - The evaluation domain
+    ///
+    /// # Returns
+    ///
+    /// A new composition polynomial with the given evaluations
     pub fn from_evaluations(evals: Vec<Fr>, domain: GeneralEvaluationDomain<Fr>) -> Self {
         let poly = Evaluations::from_vec_and_domain(evals.clone(), domain).interpolate();
         Self {
@@ -125,6 +172,11 @@ impl CompositionPolynomial {
     }
 
     /// Returns the degree of the composition polynomial.
+    ///
+    /// The degree is important for:
+    /// - FRI low-degree testing
+    /// - Proof size estimation
+    /// - Security parameter selection
     ///
     /// # Returns
     ///
@@ -151,6 +203,12 @@ impl CompositionPolynomial {
     /// # Returns
     ///
     /// A slice containing the polynomial coefficients
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation exposes the raw coefficients, which may leak
+    /// information about the trace. In a zero-knowledge implementation, these
+    /// should be committed to using a Merkle tree.
     pub fn coefficients(&self) -> &[Fr] {
         &self.polynomial.coeffs
     }
@@ -160,6 +218,12 @@ impl CompositionPolynomial {
     /// # Returns
     ///
     /// A vector of evaluations at each point in the domain
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation exposes all evaluations, which may leak
+    /// information about the trace. In a zero-knowledge implementation, these
+    /// should be committed to using a Merkle tree.
     pub fn evaluations(&self) -> Vec<Fr> {
         self.domain.fft(&self.polynomial.coeffs)
     }

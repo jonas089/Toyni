@@ -1,11 +1,42 @@
 //! Fast Reed-Solomon Interactive Oracle Proof (FRI) protocol implementation.
 //!
-//! This module provides functionality for the FRI protocol, which is used in the Stark proving system
+//! This module provides functionality for the FRI protocol, which is used in the STARK proving system
 //! to prove the low-degree of polynomials. It includes functions for polynomial folding and interpolation.
+//!
+//! # Protocol Overview
 //!
 //! The FRI protocol is a key component of STARK proofs, providing a way to prove that a polynomial
 //! has a low degree by iteratively reducing the size of the evaluation domain while maintaining
 //! the low-degree property.
+//!
+//! The protocol works by:
+//! 1. Starting with evaluations of a polynomial over a large domain
+//! 2. Iteratively folding the evaluations using random challenges
+//! 3. Reducing the domain size by half in each round
+//! 4. Finally checking the degree of the resulting polynomial
+//!
+//! # Security Considerations
+//!
+//! The current implementation:
+//! - Uses random challenges from `rand::thread_rng()`
+//! - Does not implement the full FRI protocol (missing commitment phase)
+//! - Exposes raw evaluations instead of commitments
+//!
+//! To achieve full security, we need to:
+//! - Implement the commitment phase using Merkle trees
+//! - Use Fiat-Shamir transform for challenge generation
+//! - Add proper soundness analysis
+//!
+//! # Mathematical Details
+//!
+//! For a polynomial f(x) over a domain D, the FRI folding operation computes:
+//! ```
+//! f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
+//! ```
+//! where β is a random challenge value. This operation:
+//! - Reduces the domain size by half
+//! - Maintains the low-degree property
+//! - Creates a new polynomial that can be verified
 
 use ark_bls12_381::Fr;
 use ark_ff::Field;
@@ -35,7 +66,16 @@ use ark_poly::{
 /// # Details
 ///
 /// For each pair of points (x, -x), computes:
+/// ```
 /// f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
+/// ```
+///
+/// # Security Note
+///
+/// The current implementation:
+/// - Uses raw evaluations instead of commitments
+/// - Does not implement the full FRI protocol
+/// - Leaks information about the polynomial
 pub fn fri_fold(evals: &[Fr], beta: Fr) -> Vec<Fr> {
     assert!(evals.len() % 2 == 0, "Evaluations length must be even");
     let mut result = Vec::with_capacity(evals.len() / 2);
@@ -81,6 +121,13 @@ pub fn fri_fold(evals: &[Fr], beta: Fr) -> Vec<Fr> {
 /// 1. The domain size is a power of 2
 /// 2. The domain points are evenly spaced
 /// 3. The domain is closed under multiplication
+///
+/// # Security Note
+///
+/// The current implementation:
+/// - Exposes raw polynomial coefficients
+/// - Does not use commitments
+/// - May leak information about the polynomial
 pub fn interpolate_poly(xs: &[Fr], ys: &[Fr]) -> DensePolynomial<Fr> {
     assert_eq!(xs.len(), ys.len(), "Mismatched lengths");
     let domain =
