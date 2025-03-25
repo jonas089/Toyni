@@ -3,7 +3,6 @@
 //! This module provides the core STARK proving system implementation, including:
 //! - Proof generation using the FRI protocol
 //! - Proof verification
-//! - Composition polynomial construction
 //!
 //! # Protocol Overview
 //!
@@ -17,23 +16,23 @@
 //!
 //! The current implementation:
 //! - Uses random challenges from `rand::thread_rng()`
-//! - Does not implement zero-knowledge properties
+//! - Implements some zero-knowledge properties
 //! - Uses direct polynomial evaluation instead of commitments
 //!
 //! To achieve full security, we need to:
-//! - Add random masks for zero-knowledge
-//! - Implement Merkle tree commitments
-//! - Use Fiat-Shamir transform for challenge generation
+//! - Add random masks for zero-knowledge (medium)
+//! - Implement Merkle tree commitments (simple)
+//! - Use Fiat-Shamir transform for challenge generation (simple)
+//! - Add random linear combinations to the constraint polynomial (simple)
 
+use crate::math::fri::fri_fold;
+use crate::math::polynomial::Polynomial as ToyniPolynomial;
+use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 use ark_bls12_381::Fr;
 use ark_ff::UniformRand;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain, univariate::DensePolynomial};
 use rand::thread_rng;
-
-use crate::math::fri::fri_fold;
-use crate::math::polynomial::Polynomial as ToyniPolynomial;
-use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 
 const VERIFIER_QUERIES: usize = 80;
 
@@ -41,7 +40,7 @@ const VERIFIER_QUERIES: usize = 80;
 ///
 /// # Fields
 ///
-/// * `quotient_eval_domain` - The evaluations of the quotient polynomial over the domain
+/// * `quotient_eval_domain` - The extended domain evaluations of the quotient polynomial
 /// * `fri_layers` - The layers of the FRI protocol, each containing folded evaluations
 /// * `fri_challenges` - The random challenges used in each FRI folding step
 /// * `combined_constraint` - The polynomial representing all constraints combined
@@ -178,6 +177,8 @@ impl<'a> StarkProver<'a> {
         }
 
         StarkProof {
+            // todo: commit the quotient_eval_domain to the merkle tree
+            // don't reveal all evaluations, use Fiat-Shamir transform
             quotient_eval_domain: fri_layers[0].clone(),
             fri_layers,
             fri_challenges,
@@ -237,16 +238,23 @@ impl<'a> StarkVerifier<'a> {
     /// # Details
     ///
     /// The verification process:
-    /// 1. Checks the composition polynomial identity at random points
-    /// 2. Verifies each layer of the FRI proof
-    /// 3. Ensures all constraints are satisfied
+    /// 1. Checks the composition polynomial identity at 80 randomly sampled points
+    ///    using the FRI protocol's sampling strategy
+    /// 2. Verifies each layer of the FRI proof by checking:
+    ///    - The low-degree property of each layer
+    ///    - The consistency of evaluations between layers
+    ///    - The correctness of the folding operations
+    /// 3. Ensures all constraints are satisfied by verifying:
+    ///    - Transition constraints between consecutive states
+    ///    - Boundary constraints at specific points
     ///
     /// # Security Note
     ///
     /// The current implementation:
-    /// - Uses a fixed number of spot checks (80)
+    /// - Uses a fixed number of spot checks (80) which provides a soundness error
+    ///   of approximately 2^-80 for a blowup factor of 8
     /// - Does not implement zero-knowledge verification
-    /// - May leak information about the trace
+    /// - May leak information about the trace through direct polynomial evaluation
     pub fn verify(&self, proof: &StarkProof) -> bool {
         let domain = GeneralEvaluationDomain::<Fr>::new(self.trace_len).unwrap();
         let extended_domain = GeneralEvaluationDomain::<Fr>::new(self.trace_len * 2).unwrap();

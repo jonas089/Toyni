@@ -23,6 +23,7 @@ use ark_poly::univariate::DensePolynomial;
 /// * All coefficients should be valid field elements
 pub struct Polynomial {
     /// The coefficients of the polynomial, stored in ascending order of power.
+    /// The vector must not have trailing zeros.
     pub coefficients: Vec<Fr>,
 }
 
@@ -31,25 +32,21 @@ impl Polynomial {
     ///
     /// # Arguments
     ///
-    /// * `coefficients` - Vector of coefficients in ascending order of power
+    /// * `coefficients` - The coefficients of the polynomial
     ///
     /// # Returns
     ///
     /// A new polynomial with the given coefficients
     ///
-    /// # Details
+    /// # Note
     ///
-    /// Trailing zeros are removed from the coefficients vector to maintain
-    /// the invariant that there are no trailing zeros.
-    pub fn new(coefficients: Vec<Fr>) -> Self {
+    /// Any trailing zeros in the coefficients vector will be removed.
+    pub fn new(mut coefficients: Vec<Fr>) -> Self {
         // Remove trailing zeros
-        let mut coeffs = coefficients;
-        while coeffs.last().map_or(false, |&x| x.is_zero()) {
-            coeffs.pop();
+        while coefficients.last().map_or(false, |&x| x.is_zero()) {
+            coefficients.pop();
         }
-        Polynomial {
-            coefficients: coeffs,
-        }
+        Self { coefficients }
     }
 
     /// Returns the degree of the polynomial.

@@ -110,21 +110,21 @@ impl ExecutionTrace {
     ///
     /// * `variables` - A vector of variable names specifying the order in which to print them
     ///
-    /// # Panics
-    ///
-    /// Panics if any variable in the provided vector is not present in the trace
-    ///
     /// # Format
     ///
     /// The output is formatted as a table where:
     /// - Each row represents an execution step
     /// - Each column represents a variable
     /// - Values are separated by the '|' character
+    ///
+    /// # Note
+    ///
+    /// Variables not present in the trace will be printed as empty values.
     pub fn print_trace(&self, variables: Vec<ProgramVariable>) {
         for i in 0..self.height {
             let column = self.get_column(i);
             for var in &variables {
-                print!("{} |", column.get(var).unwrap());
+                print!("{} |", column.get(var).unwrap_or(&0));
             }
             println!();
         }

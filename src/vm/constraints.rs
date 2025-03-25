@@ -275,9 +275,16 @@ impl ConstraintSystem {
     ///
     /// A vector of polynomials representing all constraints
     ///
+    /// # Requirements
+    ///
+    /// * The trace height must be a power of 2 for FFT interpolation
+    /// * All variables used in constraints must be present in the trace
+    ///
     /// # Panics
     ///
-    /// Panics if the trace height is not a power of 2
+    /// Panics if:
+    /// * The trace height is not a power of 2
+    /// * Any required variables are missing from the trace
     pub fn interpolate_all_constraints(&self, trace: &ExecutionTrace) -> Vec<ToyniPolynomial> {
         let mut polynomials = Vec::new();
 
