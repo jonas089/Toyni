@@ -9,7 +9,7 @@
 Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Argument of Knowledge) proving system in Rust. While it's not yet a full zero-knowledge STARK, it provides a solid foundation for understanding how STARKs work.
 
 
-![toyniii](art/toyniii.png)
+![toyniii](art/toyniii.jpg)
 
 
 Meet the amazing artist behind this creation, [Kristiana Skrastina](https://www.linkedin.com/in/kristiana-skrastina/)
