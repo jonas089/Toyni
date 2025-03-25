@@ -189,9 +189,6 @@ We welcome contributions to Toyni! Our current focus is on implementing zero-kno
 3. Improving documentation and adding more examples
 4. Optimizing performance and reducing proof sizes
 
-## License
-
-MIT License - see LICENSE file for details
 
 ---
 
