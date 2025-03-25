@@ -12,6 +12,8 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
 ![toyniii](art/toyniii.png)
 
 
+Meet the amazing artist behind this creation, [Kristiana Skrastina](https://www.linkedin.com/in/kristiana-skrastina/)
+
 ## Introduction
 
 STARKs are a powerful cryptographic tool that enables proving the correct execution of a computation without revealing the underlying data. Think of it as a way to convince someone that you know the solution to a puzzle without actually showing them the solution. This property, known as zero-knowledge, is crucial for privacy-preserving applications in areas like financial transactions, voting systems, and private identity verification.
