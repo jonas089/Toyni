@@ -80,14 +80,6 @@ impl Polynomial {
         self.coefficients.last().copied().unwrap_or(Fr::zero())
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.coefficients.iter().all(|c| c.is_zero())
-    }
-
-    pub fn zero() -> Self {
-        Self::new(vec![Fr::zero()])
-    }
-
     /// Divides this polynomial by another polynomial using long division.
     ///
     /// # Arguments
@@ -273,5 +265,13 @@ impl Polynomial {
     /// A new polynomial with the same coefficients
     pub fn from_dense_poly(poly: DensePolynomial<Fr>) -> Self {
         Polynomial::new(poly.coeffs)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.coefficients.iter().all(|c| c.is_zero())
+    }
+
+    pub fn zero() -> Self {
+        Self::new(vec![Fr::zero()])
     }
 }

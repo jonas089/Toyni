@@ -14,67 +14,37 @@ STARKs are a powerful cryptographic tool that enables proving the correct execut
 
 ### Why STARKs Matter
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     STARK Benefits                      │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Scalability   │  Transparency   │  Zero-Knowledge     │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • O(log² n)    │  • No trusted   │  • Privacy         │
-│    proof size   │    setup        │  • Confidentiality  │
-│  • Fast verify  │  • Public       │  • Data protection  │
-│  • Efficient    │    parameters   │  • Secure sharing   │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Scalability | Transparency | Zero-Knowledge |
+|-------------|--------------|----------------|
+| • O(log² n) proof size | • No trusted setup | • Privacy |
+| • Fast verify | • Public parameters | • Confidentiality |
+| • Efficient | | • Data protection |
+| | | • Secure sharing |
 
 ### Real-World Applications
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Application Areas                     │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Financial     │    Identity     │    Computing        │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Private      │  • Age          │  • Confidential    │
-│    payments     │    verification │    computing        │
-│  • Asset        │  • Credential   │  • Private ML      │
-│    ownership    │    validation   │  • Secure MPC      │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Financial | Identity | Computing |
+|-----------|----------|-----------|
+| • Private payments | • Age verification | • Confidential computing |
+| • Asset ownership | • Credential validation | • Private ML |
+| | | • Secure MPC |
 
 ## Technical Overview
 
 At its heart, Toyni consists of three main components working together:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     System Architecture                 │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Virtual       │   Constraint    │   STARK            │
-│   Machine       │   System        │   Prover           │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Executes     │  • Defines      │  • Generates       │
-│    programs     │    rules        │    proofs          │
-│  • Creates      │  • Validates    │  • Uses FRI        │
-│    traces       │    states       │    protocol        │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Virtual Machine | Constraint System | STARK Prover |
+|----------------|-------------------|--------------|
+| • Executes programs | • Defines rules | • Generates proofs |
+| • Creates traces | • Validates states | • Uses FRI protocol |
 
 ### How It Works
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Proof Generation                    │
-├─────────────────┬─────────────────┬─────────────────────┤
-│    Program      │   Execution     │   Verification      │
-│    Execution    │   Trace         │                     │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Run program  │  • Record       │  • Sample          │
-│  • Track state  │    states       │    positions       │
-│  • Generate     │  • Build        │  • Check           │
-│    trace        │    constraints  │    constraints     │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Program Execution | Execution Trace | Verification |
+|------------------|-----------------|--------------|
+| • Run program | • Record states | • Sample positions |
+| • Track state | • Build constraints | • Check constraints |
+| • Generate trace | | |
 
 Here's a simple example that demonstrates how Toyni works. We'll create a program that proves a sequence of numbers increments by 1 each time:
 
@@ -121,19 +91,10 @@ This example demonstrates how Toyni can prove that a sequence of numbers follows
 
 STARKs achieve their security through a combination of domain extension and low-degree testing. Here's how it works:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Security Properties                 │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Domain        │   Low-Degree    │   Soundness        │
-│   Extension     │   Testing       │   Guarantees       │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Extend       │  • FRI          │  • Soundness      │
-│    domain       │    protocol     │    error:         │
-│  • Blowup       │  • Polynomial   │    (1/b)^q        │
-│    factor       │    degree       │  • Query          │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Domain Extension | Low-Degree Testing | Soundness Guarantees |
+|-----------------|-------------------|---------------------|
+| • Extend domain | • FRI protocol | • Soundness error: (1/b)^q |
+| • Blowup factor | • Polynomial degree | • Query complexity |
 
 The security of a STARK proof relies on two key mechanisms:
 
@@ -157,64 +118,63 @@ This means that if a prover tries to cheat by modifying a fraction 1/b of the do
 
 The codebase is organized into logical components:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Project Structure                   │
-├─────────────────┬─────────────────┬─────────────────────┤
-│     Math        │       VM        │     Library        │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Polynomial   │  • Constraints  │  • Entry point     │
-│  • Domain       │  • Trace        │  • Public API      │
-│  • FRI          │  • Execution    │  • Documentation   │
-│  • STARK        │                 │                     │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Math | VM | Library |
+|------|----|---------|
+| • Polynomial | • Constraints | • Entry point |
+| • Domain | • Trace | • Public API |
+| • FRI | • Execution | • Documentation |
+| • STARK | | |
 
 ## Current Status
 
-### Implemented Features
+### Current Features
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Current Features                    │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Constraint    │   FRI Protocol  │   Mathematical      │
-│   System        │                 │   Operations        │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Transition   │  • Low-degree   │  • Polynomial      │
-│    constraints  │    testing      │    arithmetic      │
-│  • Boundary     │  • Interactive  │  • Field           │
-│    constraints  │    verification │    operations      │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Constraint System | FRI Protocol | Mathematical Operations |
+|------------------|--------------|------------------------|
+| • Transition constraints | • Low-degree testing | • Polynomial arithmetic |
+| • Boundary constraints | • Interactive verification | • Field operations |
+| • Quotient verification | • FRI folding layers | • Domain operations |
 
 ### Missing Components
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Missing Features                    │
-├─────────────────┬─────────────────┬─────────────────────┤
-│   Zero-         │   Merkle        │   Fiat-Shamir      │
-│   Knowledge     │   Commitments   │   Transform        │
-├─────────────────┼─────────────────┼─────────────────────┤
-│  • Trace        │  • Tree         │  • Deterministic   │
-│    privacy      │    structure    │    hashing         │
-│  • State        │  • Proof        │  • Non-           │
-│    protection   │    generation   │    interactive     │
-└─────────────────┴─────────────────┴─────────────────────┘
-```
+| Zero-Knowledge | Merkle Commitments | Fiat-Shamir Transform |
+|----------------|-------------------|----------------------|
+| • Trace privacy | • Tree structure | • Deterministic hashing |
+| • State protection | • Proof generation | • Non-interactive |
 
-While we have a working STARK implementation, it's not yet a full zero-knowledge system. The main limitations are:
+While we have a working STARK implementation with quotient polynomial verification, it's not yet a full zero-knowledge system. The main limitations are:
 
 1. The execution trace is currently exposed to the verifier, revealing all program variables and states.
 2. We're using random number generation instead of the Fiat-Shamir transform, making the protocol interactive.
-3. The proof system lacks Merkle commitments, which are essential for zero-knowledge properties.
+3. The proof system lacks Merkle commitments for the FRI layers, which are essential for zero-knowledge properties.
 
 To achieve full zero-knowledge capabilities, we need to:
-- Implement Merkle tree commitments for the execution trace
+- Implement Merkle tree commitments for the FRI layers
 - Replace random number generation with deterministic hashing (Fiat-Shamir transform)
 - Add trace blinding and random masks to the composition polynomial
 - Optimize the proof generation and verification process
+
+### Next Steps
+
+1. **Merkle Commitments**
+   - Implement Merkle tree structure for FRI layers
+   - Add commitment verification in the FRI protocol
+   - Optimize commitment size and verification time
+
+2. **Fiat-Shamir Transform**
+   - Replace random number generation with deterministic hashing
+   - Implement transcript-based challenge generation
+   - Ensure security properties of the transform
+
+3. **Constraint System Improvements**
+   - Add higher-level abstractions for constraint definition
+   - Implement more complex constraint types
+   - Optimize constraint evaluation
+
+4. **Zero-Knowledge Properties**
+   - Add trace blinding
+   - Implement random masks for the composition polynomial
+   - Ensure privacy of witness data
 
 ## Contributing
 

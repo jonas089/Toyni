@@ -1,5 +1,5 @@
 use ark_bls12_381::Fr;
-use ark_ff::{UniformRand, Zero};
+use ark_ff::UniformRand;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain, univariate::DensePolynomial};
 use rand::thread_rng;
@@ -86,6 +86,7 @@ impl<'a> StarkProver<'a> {
         while q_evals.len() > 4 {
             let beta = Fr::rand(&mut thread_rng());
             fri_challenges.push(beta);
+            // todo: commit the q_evals to the merkle tree
             q_evals = fri_fold(&q_evals, beta);
             fri_layers.push(q_evals.clone());
         }
@@ -101,6 +102,7 @@ impl<'a> StarkProver<'a> {
 }
 
 pub struct StarkVerifier<'a> {
+    #[allow(unused)]
     constraints: &'a ConstraintSystem,
     trace_len: usize,
 }
