@@ -30,9 +30,7 @@
 //! # Mathematical Details
 //!
 //! For a polynomial f(x) over a domain D, the FRI folding operation computes:
-//! ```
 //! f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
-//! ```
 //! where β is a random challenge value. This operation:
 //! - Reduces the domain size by half
 //! - Maintains the low-degree property
@@ -66,9 +64,7 @@ use ark_poly::{
 /// # Details
 ///
 /// For each pair of points (x, -x), computes:
-/// ```
 /// f_next(x) = (f(x) + f(-x))/2 + (f(x) - f(-x))/2 * β
-/// ```
 ///
 /// # Security Note
 ///

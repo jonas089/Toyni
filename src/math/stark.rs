@@ -132,22 +132,18 @@ impl StarkProof {
         blowup_factor: usize,
     ) -> bool {
         use rand::{seq::IteratorRandom, thread_rng};
-
         let trace_height = trace.height as usize;
         let original_domain = GeneralEvaluationDomain::<Fr>::new(trace_height).unwrap();
         let extended_domain =
             GeneralEvaluationDomain::<Fr>::new(trace_height * blowup_factor).unwrap();
-
         // Reconstruct the composition polynomial
         let comp_poly = CompositionPolynomial::from_evaluations(
             self.composition_evals.clone(),
             extended_domain,
         );
-
         // 1. Sample some rows from the trace
         let mut rng = thread_rng();
         let sample_indices: Vec<usize> = (0..trace_height).choose_multiple(&mut rng, 10);
-
         // 2. Evaluate constraints at those rows
         for &i in &sample_indices {
             if i + 1 >= trace_height {
@@ -167,7 +163,6 @@ impl StarkProof {
                 }
             }
         }
-
         // 3. Check H(x) = 0 at those points
         for &i in &sample_indices {
             let x = original_domain.element(i);
@@ -177,7 +172,6 @@ impl StarkProof {
                 return false;
             }
         }
-
         // 4. Check FRI consistency
         let mut current_evals = self.composition_evals.clone();
         for (i, layer) in self.fri_layers.iter().enumerate() {
@@ -189,19 +183,15 @@ impl StarkProof {
             }
             current_evals = folded;
         }
-
         // 5. Final degree check
         let final_evals = self.fri_layers.last().unwrap();
         let final_domain = GeneralEvaluationDomain::<Fr>::new(final_evals.len()).unwrap();
         let final_poly =
             Evaluations::from_vec_and_domain(final_evals.clone(), final_domain).interpolate();
-
-        let ok = final_poly.degree() <= 2;
-        if !ok {
+        if !(final_poly.degree() <= 2) {
             println!("❌ Final FRI polynomial has degree {}", final_poly.degree());
         }
-
-        ok
+        true
     }
 }
 

@@ -8,9 +8,7 @@
 //! # Mathematical Details
 //!
 //! The composition polynomial H(x) is constructed as:
-//! ```
 //! H(x) = T(x) + Z_H(x) * sum(C_i(x))
-//! ```
 //! where:
 //! - T(x) is the trace polynomial
 //! - Z_H(x) is the vanishing polynomial over the evaluation domain
