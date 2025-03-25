@@ -1,9 +1,10 @@
 # Toyni: A STARK Implementation in Progress
 
-> ![WARNING]
+> ⚠️ **WARNING**
+> 
 > This research implementation of a STARK proving system
 > is not yet secure and under heavy development.
-> Do not use this in production or your will CERTAINLY get compromized.
+> Do not use this in production or you will CERTAINLY get compromised.
 > No audits, no guarantees provided, use at own risk.
 
 Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Argument of Knowledge) proving system in Rust. While it's not yet a full zero-knowledge STARK, it provides a solid foundation for understanding how STARKs work.
