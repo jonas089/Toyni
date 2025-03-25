@@ -55,40 +55,36 @@ At its heart, Toyni consists of three main components working together:
 Here's a simple example that demonstrates how Toyni works. We'll create a program that proves a sequence of numbers increments by 1 each time:
 
 ```rust
-// Create a trace of 4 states, each with one variable 'x'
-let mut trace = ExecutionTrace::new(4, 1);
-for i in 0..4 {
-    let mut column = HashMap::new();
-    column.insert("x".to_string(), i);
-    trace.insert_column(column);
+fn test_valid_proof() {
+    let mut trace = ExecutionTrace::new(4, 1);
+    for i in 0..4 {
+        let mut row = HashMap::new();
+        row.insert("x".to_string(), i);
+        trace.insert_column(row);
+    }
+
+    let mut constraints = ConstraintSystem::new();
+    constraints.add_transition_constraint(
+        "increment".to_string(),
+        vec!["x".to_string()],
+        Box::new(|current, next| {
+            let x_n = Fr::from(*current.get("x").unwrap() as u64);
+            let x_next = Fr::from(*next.get("x").unwrap() as u64);
+            x_next - x_n - Fr::ONE
+        }),
+    );
+    constraints.add_boundary_constraint(
+        "starts_at_0".to_string(),
+        0,
+        vec!["x".to_string()],
+        Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+    );
+
+    let prover = StarkProver::new(&trace, &constraints);
+    let proof = prover.generate_proof();
+    let verifier = StarkVerifier::new(&constraints, trace.height as usize);
+    assert!(verifier.verify(&proof));
 }
-
-// Define the constraints
-let mut constraints = ConstraintSystem::new();
-
-// Transition constraint: x[n+1] = x[n] + 1
-constraints.add_transition_constraint(
-    "increment".to_string(),
-    vec!["x".to_string()],
-    Box::new(|current, next| {
-        let x_current = current.get("x").unwrap();
-        let x_next = next.get("x").unwrap();
-        Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1)
-    }),
-);
-
-// Boundary constraint: x[0] = 0
-constraints.add_boundary_constraint(
-    "start".to_string(),
-    0,
-    vec!["x".to_string()],
-    Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
-);
-
-// Generate and verify the proof
-let blowup = 8;
-let proof = StarkProof::new(&trace, &constraints, blowup);
-assert!(proof.verify(&trace, &constraints, blowup));
 ```
 
 This example demonstrates how Toyni can prove that a sequence of numbers follows a specific pattern (incrementing by 1) without revealing the actual numbers. The proof can be verified by anyone, but the actual values remain private.
