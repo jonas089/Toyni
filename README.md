@@ -1,6 +1,6 @@
 # Toyni: A STARK Implementation in Progress
 
-> ![WARNING]
+> [!WARNING]
 > This research implementation of a STARK proving system
 > is not yet secure and under heavy development.
 > Do not use this in production or your will CERTAINLY get compromized.
@@ -185,11 +185,15 @@ We welcome contributions to Toyni! Our current focus is on implementing zero-kno
 3. Improving documentation and adding more examples
 4. Optimizing performance and reducing proof sizes
 
-
 # Associated With
+
+<div align="center">
+
 | <a href="https://timewave.computer/"><img src="https://timewave.computer/assets/logo.png" width="80" height="80" alt="Timwave Computer"></a> | <a href="https://ciphercurve.com"><img src="https://ciphercurve.com/logo02.png" width="200" height="50" alt="Ciphercurve"></a> |
 |:---:|:---:|
 | [Timwave Computer](https://timewave.computer/) | [Ciphercurve](https://ciphercurve.com) |
+
+</div>
 
 ---
 
