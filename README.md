@@ -149,9 +149,8 @@ The codebase is organized into logical components:
 
 While we have a working STARK implementation with quotient polynomial verification, it's not yet a full zero-knowledge system. The main limitations are:
 
-1. The execution trace is currently exposed to the verifier, revealing all program variables and states.
-2. We're using random number generation instead of the Fiat-Shamir transform, making the protocol interactive.
-3. The proof system lacks Merkle commitments for the FRI layers, which are essential for zero-knowledge properties.
+1. We're using random number generation instead of the Fiat-Shamir transform, making the protocol interactive.
+2. The proof system lacks Merkle commitments for the FRI layers, which are essential for zero-knowledge properties. - instead all evaluations are passed to the verifier. This will be addressed soon.
 
 To achieve full zero-knowledge capabilities, we need to:
 - Implement Merkle tree commitments for the FRI layers
