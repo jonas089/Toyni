@@ -117,6 +117,42 @@ assert!(proof.verify(&trace, &constraints, blowup));
 
 This example demonstrates how Toyni can prove that a sequence of numbers follows a specific pattern (incrementing by 1) without revealing the actual numbers. The proof can be verified by anyone, but the actual values remain private.
 
+### Security Properties
+
+STARKs achieve their security through a combination of domain extension and low-degree testing. Here's how it works:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Security Properties                 │
+├─────────────────┬─────────────────┬─────────────────────┤
+│   Domain        │   Low-Degree    │   Soundness        │
+│   Extension     │   Testing       │   Guarantees       │
+├─────────────────┼─────────────────┼─────────────────────┤
+│  • Extend       │  • FRI          │  • Soundness      │
+│    domain       │    protocol     │    error:         │
+│  • Blowup       │  • Polynomial   │    (1/b)^q        │
+│    factor       │    degree       │  • Query          │
+└─────────────────┴─────────────────┴─────────────────────┘
+```
+
+The security of a STARK proof relies on two key mechanisms:
+
+1. **Domain Extension (Blowup)**: The composition polynomial is evaluated over a domain that's `b` times larger than the original trace length, where `b` is the blowup factor.
+
+2. **Low-Degree Testing**: The FRI protocol ensures that the polynomial being tested is close to a valid low-degree polynomial.
+
+The soundness error (probability of accepting an invalid proof) is bounded by:
+
+```
+Pr[undetected cheat] = (1/b)^q
+```
+
+where:
+- `b` is the blowup factor (e.g., 8 in our example)
+- `q` is the number of queries made by the verifier
+
+This means that if a prover tries to cheat by modifying a fraction 1/b of the domain, the verifier will detect this with probability at least 1 - (1/b)^q. For example, with a blowup factor of 8 and 10 queries, the soundness error is at most (1/8)^10 ≈ 0.0000001.
+
 ## Project Structure
 
 The codebase is organized into logical components:
