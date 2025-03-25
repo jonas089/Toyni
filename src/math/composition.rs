@@ -116,6 +116,14 @@ impl CompositionPolynomial {
         }
     }
 
+    pub fn from_evaluations(evals: Vec<Fr>, domain: GeneralEvaluationDomain<Fr>) -> Self {
+        let poly = Evaluations::from_vec_and_domain(evals.clone(), domain).interpolate();
+        Self {
+            polynomial: poly,
+            domain,
+        }
+    }
+
     /// Returns the degree of the composition polynomial.
     ///
     /// # Returns
