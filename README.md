@@ -1,10 +1,9 @@
 # Toyni: A STARK Implementation in Progress
 
-> ⚠️ **WARNING**
-> 
+> ![WARNING]
 > This research implementation of a STARK proving system
 > is not yet secure and under heavy development.
-> Do not use this in production or you will CERTAINLY get compromised.
+> Do not use this in production or your will CERTAINLY get compromized.
 > No audits, no guarantees provided, use at own risk.
 
 Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Argument of Knowledge) proving system in Rust. While it's not yet a full zero-knowledge STARK, it provides a solid foundation for understanding how STARKs work.
@@ -188,23 +187,9 @@ We welcome contributions to Toyni! Our current focus is on implementing zero-kno
 
 
 # Associated With
-<div style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-  <div style="text-align: center;">
-    <a href="https://timewave.computer/">
-      <img src="https://timewave.computer/assets/logo.png" width="100" height="100" alt="Timwave Computer">
-      <br>
-      <span style="font-size: 14px;">Timwave Computer</span>
-    </a>
-  </div>
-
-  <div style="text-align: center;">
-    <a href="https://ciphercurve.com">
-      <img src="https://ciphercurve.com/logo02.png" width="280" height="70" alt="Ciphercurve">
-      <br>
-      <span style="font-size: 14px;">Ciphercurve</span>
-    </a>
-  </div>
-</div>
+| <a href="https://timewave.computer/"><img src="https://timewave.computer/assets/logo.png" width="80" height="80" alt="Timwave Computer"></a> | <a href="https://ciphercurve.com"><img src="https://ciphercurve.com/logo02.png" width="200" height="50" alt="Ciphercurve"></a> |
+|:---:|:---:|
+| [Timwave Computer](https://timewave.computer/) | [Ciphercurve](https://ciphercurve.com) |
 
 ---
 
