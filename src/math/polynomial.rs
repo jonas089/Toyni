@@ -80,6 +80,14 @@ impl Polynomial {
         self.coefficients.last().copied().unwrap_or(Fr::zero())
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.coefficients.iter().all(|c| c.is_zero())
+    }
+
+    pub fn zero() -> Self {
+        Self::new(vec![Fr::zero()])
+    }
+
     /// Divides this polynomial by another polynomial using long division.
     ///
     /// # Arguments
@@ -101,31 +109,35 @@ impl Polynomial {
         }
 
         let dividend = self.coefficients.clone();
-        let mut quotient = vec![Fr::zero(); self.degree() - divisor.degree() + 1];
-        let mut remainder = vec![Fr::zero(); self.degree() + 1];
+        let divisor_degree = divisor.degree();
+        let dividend_degree = self.degree();
 
-        // Copy dividend to remainder
-        for i in 0..dividend.len() {
-            remainder[i] = dividend[i];
+        // If dividend degree is less than divisor degree, quotient is zero
+        if dividend_degree < divisor_degree {
+            return Some((Polynomial::zero(), self.clone()));
         }
 
+        let mut quotient = vec![Fr::zero(); dividend_degree - divisor_degree + 1];
+        let mut remainder = dividend.clone();
+
         // Perform long division
-        while remainder.len() >= divisor.coefficients.len() {
-            let degree_diff = remainder.len() - divisor.coefficients.len();
-            let scale = remainder.last().unwrap() / &divisor.leading_coefficient();
-
-            quotient[degree_diff] = scale;
-
-            // Multiply divisor by scale and subtract from remainder
-            for i in 0..divisor.coefficients.len() {
-                let idx = remainder.len() - divisor.coefficients.len() + i;
-                remainder[idx] -= scale * divisor.coefficients[i];
+        for i in (0..=dividend_degree - divisor_degree).rev() {
+            let leading_coeff = remainder[i + divisor_degree];
+            if leading_coeff.is_zero() {
+                continue;
             }
 
-            // Remove trailing zeros from remainder
-            while remainder.last().map_or(false, |&x| x.is_zero()) {
-                remainder.pop();
+            quotient[i] = leading_coeff / divisor.leading_coefficient();
+
+            // Subtract divisor * quotient term from remainder
+            for j in 0..=divisor_degree {
+                remainder[i + j] -= quotient[i] * divisor.coefficients[j];
             }
+        }
+
+        // Trim leading zeros from remainder
+        while !remainder.is_empty() && remainder.last().unwrap().is_zero() {
+            remainder.pop();
         }
 
         Some((Polynomial::new(quotient), Polynomial::new(remainder)))

@@ -129,6 +129,52 @@ impl ExecutionTrace {
             println!();
         }
     }
+
+    /// Interpolates a value between two execution steps for a given variable.
+    ///
+    /// # Arguments
+    ///
+    /// * `variable` - The name of the variable to interpolate
+    /// * `step1` - The first execution step index
+    /// * `step2` - The second execution step index
+    /// * `t` - The interpolation parameter between 0 and 100 (representing percentage)
+    ///
+    /// # Returns
+    ///
+    /// The interpolated value between the two steps
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// * Either step index is out of bounds
+    /// * The variable is not present in the trace
+    /// * The interpolation parameter t is not between 0 and 100
+    pub fn interpolate(&self, variable: &ProgramVariable, step1: u64, step2: u64, t: u8) -> u64 {
+        assert!(
+            step1 < self.height && step2 < self.height,
+            "Step indices out of bounds"
+        );
+        assert!(
+            t <= 100,
+            "Interpolation parameter must be between 0 and 100"
+        );
+
+        let col1 = self.get_column(step1);
+        let col2 = self.get_column(step2);
+
+        let val1 = *col1
+            .get(variable)
+            .expect("Variable not found in first step");
+        let val2 = *col2
+            .get(variable)
+            .expect("Variable not found in second step");
+
+        // Integer interpolation: val1 + (t * (val2 - val1)) / 100
+        // We need to handle the division carefully to avoid truncation errors
+        let diff = val2 - val1;
+        let scaled_diff = (diff * (t as u64)) / 100;
+        val1 + scaled_diff
+    }
 }
 
 #[cfg(test)]
@@ -159,5 +205,32 @@ mod tests {
             "d".to_string(),
             "e".to_string(),
         ]);
+    }
+
+    #[test]
+    fn test_interpolation() {
+        let execution_trace = generate_test_trace();
+
+        // Test variable "a" interpolation between steps 0 and 1
+        // step 0: 0, step 1: 1
+        let interpolated = execution_trace.interpolate(&"a".to_string(), 0, 1, 50);
+        assert_eq!(interpolated, 0); // At 50% between 0 and 1
+
+        // Test variable "b" interpolation between steps 0 and 1
+        // step 0: 1, step 1: 2
+        let interpolated = execution_trace.interpolate(&"b".to_string(), 0, 1, 0);
+        assert_eq!(interpolated, 1);
+
+        // Test variable "c" interpolation between steps 0 and 1
+        // step 0: 2, step 1: 3
+        let interpolated = execution_trace.interpolate(&"c".to_string(), 0, 1, 100);
+        assert_eq!(interpolated, 3);
+
+        // Additional test cases
+        let interpolated = execution_trace.interpolate(&"a".to_string(), 0, 1, 100);
+        assert_eq!(interpolated, 1);
+
+        let interpolated = execution_trace.interpolate(&"b".to_string(), 0, 1, 100);
+        assert_eq!(interpolated, 2);
     }
 }
