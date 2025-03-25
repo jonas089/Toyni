@@ -120,7 +120,6 @@ impl<'a> StarkProver<'a> {
         println!("\n=== Prover Debug ===");
         println!("Trace length: {}", trace_len);
         println!("Extended domain size: {}", extended_domain.size());
-
         let constraint_polys = self.constraints.interpolate_all_constraints(self.trace);
         println!("\nConstraint polynomials:");
         for (i, poly) in constraint_polys.iter().enumerate() {
@@ -169,6 +168,7 @@ impl<'a> StarkProver<'a> {
 
         let mut fri_layers = vec![q_evals.clone()];
         let mut fri_challenges = Vec::new();
+        // large enough degree to ensure enough points are checked
         while q_evals.len() > 4 {
             let beta = Fr::rand(&mut thread_rng());
             fri_challenges.push(beta);

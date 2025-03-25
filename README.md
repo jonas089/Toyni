@@ -178,6 +178,9 @@ To achieve full zero-knowledge capabilities, we need to:
    - Implement random masks for the composition polynomial
    - Ensure privacy of witness data
 
+5. **Random Linear Combinations**
+   - Add random linear combinations to the constraint polynomial
+
 ## Contributing
 
 We welcome contributions to Toyni! Our current focus is on implementing zero-knowledge properties and improving the overall system. We're particularly interested in:
