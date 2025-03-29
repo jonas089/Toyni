@@ -317,8 +317,8 @@ mod tests {
             "increment".to_string(),
             vec!["x".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -326,7 +326,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);
@@ -349,8 +349,8 @@ mod tests {
             "increment".to_string(),
             vec!["x".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -358,7 +358,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);

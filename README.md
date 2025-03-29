@@ -1,5 +1,4 @@
 # Toyni: A STARK Implementation in Progress
-
 > [!WARNING]
 >
 > This research implementation of a STARK proving system
