@@ -16,7 +16,7 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
 
 ## 0. Background, STARK Verifier: Constraint vs FRI Layer Checks
 
-### ✅ Constraint Check (Single Layer)
+## ✅ Constraint Check (Single Layer)
 - For each randomly sampled point `x`:
   - Verifier checks:
     ```
@@ -29,7 +29,7 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
 
 ---
 
-### ✅ FRI Layer Checks (Multiple Layers)
+## ✅ FRI Layer Checks (Multiple Layers)
 - Purpose: Prove that `Q(x)` is a **low-degree polynomial**
 - Process:
   1. Start with evaluations of `Q(x)` over the domain (Layer 0)
@@ -88,7 +88,43 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
                ✅ Accept proof
 ```
 
-### 🔁 Summary
+## 🔐 STARK Verifier: Security Parameters for 128-bit Soundness
+
+### FRI QUERIES
+To achieve **128-bit soundness** in STARK proofs, the total probability that a cheating prover is accepted must be less than `2⁻¹²⁸`.
+
+This involves carefully choosing parameters for:
+
+- Constraint checks (`Q(x)` evaluations)
+- FRI protocol (number of layers and queries per layer)
+
+> Example:
+> - If `L = 20` layers → `log₂(20) ≈ 4.3`
+> - Then: `m ≈ 133` queries per layer
+---
+
+### CONSTRAINT CHECKS
+> Example:
+> - If `d / N = 1/4`, then `log₂(N/d) = 2`
+> - So: `n = 128 / 2 = 64` spot checks
+
+> - If `d / N = 1/8`, then `log₂(N/d) = 3`
+> - So: `n = 128 / 3 ≈ 43`, but round up to be safe
+---
+
+### ✅ Practical Recommendation:
+Use `n = 64–80` spot checks for strong 128-bit soundness across typical domain/degree ratios.
+
+### ✅ Recommendations for 128-bit Security
+
+| Component              | Suggested Value                    |
+|-----------------------|------------------------------------|
+| Constraint checks `n` | 64–80                              |
+| FRI layers `L`        | log₂(N / degree of final poly)     |
+| FRI queries `m`       | ≥ log₂(L) + 128 (e.g., 133)        |
+| Total soundness error | ε_total = ε_constraints + ε_fri ≤ 2⁻¹²⁸ |
+
+## 🔁 Summary
 
 | Check Type         | Equation Checked              | Merkle Proofs | Multiple Layers? |
 |--------------------|-------------------------------|----------------|-------------------|

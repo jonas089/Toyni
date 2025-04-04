@@ -130,7 +130,7 @@ mod tests {
                 .coeffs
                 .iter()
                 .enumerate()
-                .map(|(j, &c)| c * x.pow(&[j as u64]))
+                .map(|(j, &c)| c * x.pow([j as u64]))
                 .sum::<Fr>();
             assert_eq!(eval, y);
         }
