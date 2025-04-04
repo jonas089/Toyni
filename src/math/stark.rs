@@ -82,6 +82,7 @@ impl<'a> StarkProver<'a> {
         );
 
         let z_poly = ToyniPolynomial::from_dense_poly(domain.vanishing_polynomial().into());
+        // todo: add a random polynomial to the vanishing polynomial
         println!("\nVanishing polynomial: {:?}", z_poly.coefficients);
 
         let (quotient_poly, rem) = c_poly.divide(&z_poly).unwrap();

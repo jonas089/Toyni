@@ -14,13 +14,96 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
 ![toyniii](art/toyniii.jpg)
 
 
+## 0. Background, STARK Verifier: Constraint vs FRI Layer Checks
+
+### ✅ Constraint Check (Single Layer)
+- For each randomly sampled point `x`:
+  - Verifier checks:
+    ```
+    Q(x) * Z(x) == C(x)
+    ```
+  - Ensures that the execution trace satisfies all constraints
+  - **This check is done once per point**
+  - **Not done across layers**
+  - Merkle proof is optional (depends on how C(x) and Q(x) are committed)
+
+---
+
+### ✅ FRI Layer Checks (Multiple Layers)
+- Purpose: Prove that `Q(x)` is a **low-degree polynomial**
+- Process:
+  1. Start with evaluations of `Q(x)` over the domain (Layer 0)
+  2. Recursively apply `fri_fold()` to reduce degree at each layer
+  3. At each layer:
+     - Verifier checks Merkle proofs for sampled values
+     - Verifies that folding is consistent with previous layer
+  4. Final layer should be constant or degree-1, checked directly
+
+- ✅ Merkle proofs are **checked at each FRI layer**
+- ✅ Folding correctness is verified at each layer
+
+---
+
+## 🔍 STARK Verifier Flow: Visual Diagram
+
+```text
+ ┌───────────────────────────────────────────────┐
+ │              Constraint Check                 │
+ └───────────────────────────────────────────────┘
+        Sample random x₁, x₂, ..., xₙ ∈ Domain
+                    │
+                    ▼
+         ┌────────────────────────────┐
+         │  Compute Q(xᵢ), C(xᵢ), Z(xᵢ) │
+         └────────────────────────────┘
+                    │
+                    ▼
+          Check: Q(xᵢ) * Z(xᵢ) == C(xᵢ)
+                    │
+                    ▼
+       If false → ❌ Reject   If true → Continue
+                    ▼
+ ┌───────────────────────────────────────────────┐
+ │                FRI Protocol                   │
+ └───────────────────────────────────────────────┘
+     ┌────────────────────────────────────┐
+     │      FRI Layer 0: Q(x) evaluations │◄── Merkle proof check
+     └────────────────────────────────────┘
+                    │
+              fri_fold(beta₀)
+                    ▼
+     ┌────────────────────────────────────┐
+     │      FRI Layer 1: folded values    │◄── Merkle proof check
+     └────────────────────────────────────┘
+                    │
+              fri_fold(beta₁)
+                    ▼
+                  ...
+                    ▼
+     ┌────────────────────────────────────┐
+     │ Final Layer: degree ≤ 1 polynomial│◄── Direct value check
+     └────────────────────────────────────┘
+
+                    ▼
+               ✅ Accept proof
+```
+
+### 🔁 Summary
+
+| Check Type         | Equation Checked              | Merkle Proofs | Multiple Layers? |
+|--------------------|-------------------------------|----------------|-------------------|
+| Constraint Check   | `Q(x) * Z(x) == C(x)`          | Optional       | ❌ No             |
+| FRI Layer Check    | Folding consistency, low-degree| ✅ Yes          | ✅ Yes            |
+
+
+
 Meet the amazing artist behind this creation, [Kristiana Skrastina](https://www.linkedin.com/in/kristiana-skrastina/)
 
-## Introduction
+## 1. Introduction
 
 STARKs are a powerful cryptographic tool that enables proving the correct execution of a computation without revealing the underlying data. Think of it as a way to convince someone that you know the solution to a puzzle without actually showing them the solution. This property, known as zero-knowledge, is crucial for privacy-preserving applications in areas like financial transactions, voting systems, and private identity verification.
 
-### Why STARKs Matter
+### 2. Why STARKs Matter
 
 | Scalability | Transparency | Zero-Knowledge |
 |-------------|--------------|----------------|
@@ -29,7 +112,7 @@ STARKs are a powerful cryptographic tool that enables proving the correct execut
 | • Efficient | | • Data protection |
 | | | • Secure sharing |
 
-### Real-World Applications
+### 3. Real-World Applications
 
 | Financial | Identity | Computing |
 |-----------|----------|-----------|
@@ -37,7 +120,7 @@ STARKs are a powerful cryptographic tool that enables proving the correct execut
 | • Asset ownership | • Credential validation | • Private ML |
 | | | • Secure MPC |
 
-## Technical Overview
+## 4. Technical Overview
 
 At its heart, Toyni consists of three main components working together:
 
@@ -46,7 +129,7 @@ At its heart, Toyni consists of three main components working together:
 | • Executes programs | • Defines rules | • Generates proofs |
 | • Creates traces | • Validates states | • Uses FRI protocol |
 
-### How It Works
+### 5. How It Works
 
 | Program Execution | Execution Trace | Verification |
 |------------------|-----------------|--------------|
@@ -91,7 +174,7 @@ fn test_valid_proof() {
 
 This example demonstrates how Toyni can prove that a sequence of numbers follows a specific pattern (incrementing by 1) without revealing the actual numbers. The proof can be verified by anyone, but the actual values remain private.
 
-### Security Properties
+### 6. Security Properties
 
 STARKs achieve their security through a combination of domain extension and low-degree testing. Here's how it works:
 
@@ -118,7 +201,7 @@ where:
 
 This means that if a prover tries to cheat by modifying a fraction 1/b of the domain, the verifier will detect this with probability at least 1 - (1/b)^q. For example, with a blowup factor of 8 and 10 queries, the soundness error is at most (1/8)^10 ≈ 0.0000001.
 
-## Project Structure
+## 7. Project Structure
 
 The codebase is organized into logical components:
 
@@ -129,9 +212,8 @@ The codebase is organized into logical components:
 | • FRI | • Execution | • Documentation |
 | • STARK | | |
 
-## Current Status
 
-### Current Features
+### 8. Current Features
 
 | Constraint System | FRI Protocol | Mathematical Operations |
 |------------------|--------------|------------------------|
@@ -139,7 +221,7 @@ The codebase is organized into logical components:
 | • Boundary constraints | • Interactive verification | • Field operations |
 | • Quotient verification | • FRI folding layers | • Domain operations |
 
-### Missing Components
+### 9. Missing Components
 
 | Zero-Knowledge | Merkle Commitments | Fiat-Shamir Transform |
 |----------------|-------------------|----------------------|
@@ -157,7 +239,7 @@ To achieve full zero-knowledge capabilities, we need to:
 - Add trace blinding and random masks to the composition polynomial
 - Optimize the proof generation and verification process
 
-### Next Steps
+### 10. Next Steps
 
 1. **Merkle Commitments**
    - Implement Merkle tree structure for FRI layers
@@ -182,7 +264,7 @@ To achieve full zero-knowledge capabilities, we need to:
 5. **Random Linear Combinations**
    - Add random linear combinations to the constraint polynomial
 
-## Contributing
+## 11. Contributing
 
 We welcome contributions to Toyni! Our current focus is on implementing zero-knowledge properties and improving the overall system. We're particularly interested in:
 
@@ -191,7 +273,7 @@ We welcome contributions to Toyni! Our current focus is on implementing zero-kno
 3. Improving documentation and adding more examples
 4. Optimizing performance and reducing proof sizes
 
-# Associated With
+# 12. Associated With
 
 <div align="center">
 
