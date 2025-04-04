@@ -1,11 +1,11 @@
-//! Domain operations for the Stark proving system.
+//! Evaluation domain operations for Stark proofs.
 //!
 //! This module provides functionality for working with evaluation domains in the Stark proving system.
 //! It includes functions for creating and extending evaluation domains, as well as operations on domain points.
 use ark_bls12_381::Fr;
 use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
 
-/// Folds domain points by squaring each point.
+/// Squares each point in the domain for FRI protocol.
 ///
 /// This operation is used in the FRI protocol to reduce the size of the evaluation domain
 /// while maintaining certain algebraic properties.
@@ -31,7 +31,7 @@ pub fn fold_domain_points(domain_points: Vec<Fr>, domain_size: usize) -> Vec<Fr>
         .collect()
 }
 
-/// Creates a new evaluation domain of the specified size.
+/// Creates an evaluation domain of size 2^n.
 ///
 /// # Arguments
 ///
@@ -48,7 +48,7 @@ pub fn get_domain(domain_size: usize) -> GeneralEvaluationDomain<Fr> {
     GeneralEvaluationDomain::<Fr>::new(domain_size).unwrap()
 }
 
-/// Creates an extended evaluation domain by applying a blowup factor.
+/// Creates an extended domain by applying a blowup factor.
 ///
 /// The extended domain is used to improve the security of the Stark proof by
 /// increasing the size of the evaluation domain.
@@ -71,8 +71,7 @@ pub fn get_extended_domain(
     domain_size: usize,
     blowup_factor: usize,
 ) -> GeneralEvaluationDomain<Fr> {
-    let extended_domain = GeneralEvaluationDomain::<Fr>::new(domain_size * blowup_factor).unwrap();
-    extended_domain
+    GeneralEvaluationDomain::<Fr>::new(domain_size * blowup_factor).unwrap()
 }
 
 #[test]

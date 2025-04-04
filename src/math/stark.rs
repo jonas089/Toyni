@@ -1,29 +1,7 @@
-//! STARK (Scalable Transparent Argument of Knowledge) protocol implementation.
+//! STARK (Scalable Transparent Argument of Knowledge) implementation.
 //!
-//! This module provides the core STARK proving system implementation, including:
-//! - Proof generation using the FRI protocol
-//! - Proof verification
-//!
-//! # Protocol Overview
-//!
-//! The STARK protocol works by:
-//! 1. Converting program execution into a trace polynomial
-//! 2. Constructing a composition polynomial that encodes all constraints
-//! 3. Using the FRI protocol to prove the low-degree of the composition polynomial
-//! 4. Verifying the proof through random point evaluation
-//!
-//! # Security Considerations
-//!
-//! The current implementation:
-//! - Uses random challenges from `rand::thread_rng()`
-//! - Implements some zero-knowledge properties
-//! - Uses direct polynomial evaluation instead of commitments
-//!
-//! To achieve full security, we need to:
-//! - Add random masks for zero-knowledge (medium)
-//! - Implement Merkle tree commitments (simple)
-//! - Use Fiat-Shamir transform for challenge generation (simple)
-//! - Add random linear combinations to the constraint polynomial (simple)
+//! Converts program execution into trace polynomial, constructs composition polynomial,
+//! and uses FRI protocol to prove low-degree.
 
 use crate::math::fri::fri_fold;
 use crate::math::polynomial::Polynomial as ToyniPolynomial;
@@ -36,81 +14,35 @@ use rand::thread_rng;
 
 const VERIFIER_QUERIES: usize = 80;
 
-/// Represents a STARK proof containing all necessary components for verification.
-///
-/// # Fields
-///
-/// * `quotient_eval_domain` - The extended domain evaluations of the quotient polynomial
-/// * `fri_layers` - The layers of the FRI protocol, each containing folded evaluations
-/// * `fri_challenges` - The random challenges used in each FRI folding step
-/// * `combined_constraint` - The polynomial representing all constraints combined
-/// * `quotient_poly` - The quotient polynomial obtained by dividing the composition polynomial
+/// STARK proof containing components for verification.
 pub struct StarkProof {
-    /// The evaluations of the quotient polynomial over the domain
+    /// Quotient polynomial evaluations over domain
     pub quotient_eval_domain: Vec<Fr>,
-    /// The layers of the FRI protocol, each containing folded evaluations
+    /// FRI protocol layers with folded evaluations
     pub fri_layers: Vec<Vec<Fr>>,
-    /// The random challenges used in each FRI folding step
+    /// Random challenges for FRI folding
     pub fri_challenges: Vec<Fr>,
-    /// The polynomial representing all constraints combined
+    /// Combined constraint polynomial
     pub combined_constraint: ToyniPolynomial,
-    /// The quotient polynomial obtained by dividing the composition polynomial
+    /// Quotient polynomial from division
     pub quotient_poly: ToyniPolynomial,
 }
 
-/// The prover component of the STARK protocol.
-///
-/// The prover is responsible for:
-/// 1. Constructing the composition polynomial
-/// 2. Generating the FRI proof layers
-/// 3. Creating the final STARK proof
-///
-/// # Fields
-///
-/// * `trace` - The execution trace to prove
-/// * `constraints` - The constraint system defining program rules
+/// STARK prover component.
 pub struct StarkProver<'a> {
-    /// The execution trace to prove
+    /// Execution trace to prove
     trace: &'a ExecutionTrace,
-    /// The constraint system defining program rules
+    /// Constraint system defining rules
     constraints: &'a ConstraintSystem,
 }
 
 impl<'a> StarkProver<'a> {
-    /// Creates a new STARK prover.
-    ///
-    /// # Arguments
-    ///
-    /// * `trace` - The execution trace to prove
-    /// * `constraints` - The constraint system defining program rules
-    ///
-    /// # Returns
-    ///
-    /// A new STARK prover instance
+    /// Creates new STARK prover.
     pub fn new(trace: &'a ExecutionTrace, constraints: &'a ConstraintSystem) -> Self {
         Self { trace, constraints }
     }
 
-    /// Generates a STARK proof for the execution trace.
-    ///
-    /// # Returns
-    ///
-    /// A STARK proof containing all necessary components for verification
-    ///
-    /// # Details
-    ///
-    /// The proof generation process:
-    /// 1. Constructs the composition polynomial from constraints
-    /// 2. Computes the quotient polynomial
-    /// 3. Generates FRI proof layers
-    /// 4. Creates the final proof
-    ///
-    /// # Security Note
-    ///
-    /// The current implementation:
-    /// - Uses raw polynomial evaluations
-    /// - Does not implement zero-knowledge
-    /// - Leaks information about the trace
+    /// Generates STARK proof for execution trace.
     pub fn generate_proof(&self) -> StarkProof {
         let trace_len = self.trace.height as usize;
         let domain = GeneralEvaluationDomain::<Fr>::new(trace_len).unwrap();
@@ -188,36 +120,17 @@ impl<'a> StarkProver<'a> {
     }
 }
 
-/// The verifier component of the STARK protocol.
-///
-/// The verifier is responsible for:
-/// 1. Checking the composition polynomial identity
-/// 2. Verifying the FRI proof layers
-/// 3. Ensuring the proof is valid
-///
-/// # Fields
-///
-/// * `constraints` - The constraint system defining program rules
-/// * `trace_len` - The length of the execution trace
+/// STARK verifier component.
 pub struct StarkVerifier<'a> {
-    /// The constraint system defining program rules
+    /// Constraint system defining rules
     #[allow(unused)]
     constraints: &'a ConstraintSystem,
-    /// The length of the execution trace
+    /// Length of execution trace
     trace_len: usize,
 }
 
 impl<'a> StarkVerifier<'a> {
-    /// Creates a new STARK verifier.
-    ///
-    /// # Arguments
-    ///
-    /// * `constraints` - The constraint system defining program rules
-    /// * `trace_len` - The length of the execution trace
-    ///
-    /// # Returns
-    ///
-    /// A new STARK verifier instance
+    /// Creates new STARK verifier.
     pub fn new(constraints: &'a ConstraintSystem, trace_len: usize) -> Self {
         Self {
             constraints,
@@ -225,36 +138,7 @@ impl<'a> StarkVerifier<'a> {
         }
     }
 
-    /// Verifies a STARK proof.
-    ///
-    /// # Arguments
-    ///
-    /// * `proof` - The STARK proof to verify
-    ///
-    /// # Returns
-    ///
-    /// `true` if the proof is valid, `false` otherwise
-    ///
-    /// # Details
-    ///
-    /// The verification process:
-    /// 1. Checks the composition polynomial identity at 80 randomly sampled points
-    ///    using the FRI protocol's sampling strategy
-    /// 2. Verifies each layer of the FRI proof by checking:
-    ///    - The low-degree property of each layer
-    ///    - The consistency of evaluations between layers
-    ///    - The correctness of the folding operations
-    /// 3. Ensures all constraints are satisfied by verifying:
-    ///    - Transition constraints between consecutive states
-    ///    - Boundary constraints at specific points
-    ///
-    /// # Security Note
-    ///
-    /// The current implementation:
-    /// - Uses a fixed number of spot checks (80) which provides a soundness error
-    ///   of approximately 2^-80 for a blowup factor of 8
-    /// - Does not implement zero-knowledge verification
-    /// - May leak information about the trace through direct polynomial evaluation
+    /// Verifies STARK proof.
     pub fn verify(&self, proof: &StarkProof) -> bool {
         let domain = GeneralEvaluationDomain::<Fr>::new(self.trace_len).unwrap();
         let extended_domain = GeneralEvaluationDomain::<Fr>::new(self.trace_len * 2).unwrap();
@@ -312,7 +196,7 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         constraints.add_transition_constraint(
             "increment".to_string(),
             vec!["x".to_string()],
@@ -344,7 +228,7 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         constraints.add_transition_constraint(
             "increment".to_string(),
             vec!["x".to_string()],
@@ -376,13 +260,13 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         constraints.add_transition_constraint(
             "increment".to_string(),
             vec!["x".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -390,7 +274,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);
@@ -409,14 +293,14 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         // x[n+1] = x[n] + 1
         constraints.add_transition_constraint(
             "increment_x".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -425,8 +309,8 @@ mod tests {
             "y_is_double_x".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, _| {
-                let x = Fr::from(*current.get("x").unwrap() as u64);
-                let y = Fr::from(*current.get("y").unwrap() as u64);
+                let x = Fr::from(*current.get("x").unwrap());
+                let y = Fr::from(*current.get("y").unwrap());
                 y - x * Fr::from(2u64)
             }),
         );
@@ -434,7 +318,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);
@@ -452,13 +336,13 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         constraints.add_transition_constraint(
             "zero_sequence".to_string(),
             vec!["x".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n // Should be zero
             }),
         );
@@ -466,7 +350,7 @@ mod tests {
             "starts_at_zero".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);
@@ -485,14 +369,14 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         // x[n+1] = x[n] + 1
         constraints.add_transition_constraint(
             "increment_x".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -501,8 +385,8 @@ mod tests {
             "y_is_x_squared".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, _| {
-                let x = Fr::from(*current.get("x").unwrap() as u64);
-                let y = Fr::from(*current.get("y").unwrap() as u64);
+                let x = Fr::from(*current.get("x").unwrap());
+                let y = Fr::from(*current.get("y").unwrap());
                 y - x * x
             }),
         );
@@ -510,7 +394,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);
@@ -529,14 +413,14 @@ mod tests {
             trace.insert_column(row);
         }
 
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         // x[n+1] = x[n] + 1
         constraints.add_transition_constraint(
             "increment_x".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, next| {
-                let x_n = Fr::from(*current.get("x").unwrap() as u64);
-                let x_next = Fr::from(*next.get("x").unwrap() as u64);
+                let x_n = Fr::from(*current.get("x").unwrap());
+                let x_next = Fr::from(*next.get("x").unwrap());
                 x_next - x_n - Fr::ONE
             }),
         );
@@ -545,8 +429,8 @@ mod tests {
             "y_is_x_squared".to_string(),
             vec!["x".to_string(), "y".to_string()],
             Box::new(|current, _| {
-                let x = Fr::from(*current.get("x").unwrap() as u64);
-                let y = Fr::from(*current.get("y").unwrap() as u64);
+                let x = Fr::from(*current.get("x").unwrap());
+                let y = Fr::from(*current.get("y").unwrap());
                 y - x * x
             }),
         );
@@ -554,7 +438,7 @@ mod tests {
             "starts_at_0".to_string(),
             0,
             vec!["x".to_string()],
-            Box::new(|row| Fr::from(*row.get("x").unwrap() as u64)),
+            Box::new(|row| Fr::from(*row.get("x").unwrap())),
         );
 
         let prover = StarkProver::new(&trace, &constraints);

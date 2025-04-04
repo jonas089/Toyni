@@ -1,18 +1,12 @@
-//! Polynomial operations for the Stark proving system.
-//!
-//! This module provides a basic implementation of polynomial arithmetic operations
-//! required for the Stark proving system. It includes operations like addition,
-//! multiplication, division, and evaluation over finite fields.
-//!
-//! The implementation is optimized for use in the Stark proving system, where
-//! polynomials are used to represent execution traces and constraints.
+//! Basic polynomial operations over finite fields.
 
 use ark_bls12_381::Fr;
 use ark_ff::Zero;
 use ark_poly::univariate::DensePolynomial;
+use std::fmt;
 
 #[derive(Debug, Clone)]
-/// Represents a polynomial with finite field coefficients.
+/// Polynomial with finite field coefficients.
 ///
 /// The polynomial is stored as a vector of coefficients, where the index represents
 /// the power of x. For example, [1, 2, 3] represents 3x² + 2x + 1.
@@ -22,13 +16,13 @@ use ark_poly::univariate::DensePolynomial;
 /// * The coefficients vector should not have trailing zeros
 /// * All coefficients should be valid field elements
 pub struct Polynomial {
-    /// The coefficients of the polynomial, stored in ascending order of power.
+    /// Coefficients in ascending order of power.
     /// The vector must not have trailing zeros.
     pub coefficients: Vec<Fr>,
 }
 
 impl Polynomial {
-    /// Creates a new polynomial from a vector of coefficients.
+    /// Creates a new polynomial from coefficients.
     ///
     /// # Arguments
     ///
@@ -43,7 +37,7 @@ impl Polynomial {
     /// Any trailing zeros in the coefficients vector will be removed.
     pub fn new(mut coefficients: Vec<Fr>) -> Self {
         // Remove trailing zeros
-        while coefficients.last().map_or(false, |&x| x.is_zero()) {
+        while coefficients.last().is_some_and(|&x| x.is_zero()) {
             coefficients.pop();
         }
         Self { coefficients }
@@ -65,7 +59,7 @@ impl Polynomial {
         }
     }
 
-    /// Returns the leading coefficient of the polynomial.
+    /// Returns the coefficient of the highest power term.
     ///
     /// The leading coefficient is the coefficient of the highest power term.
     /// For the zero polynomial, returns 0.
@@ -77,7 +71,7 @@ impl Polynomial {
         self.coefficients.last().copied().unwrap_or(Fr::zero())
     }
 
-    /// Divides this polynomial by another polynomial using long division.
+    /// Divides this polynomial by another, returns (quotient, remainder).
     ///
     /// # Arguments
     ///
@@ -132,84 +126,23 @@ impl Polynomial {
         Some((Polynomial::new(quotient), Polynomial::new(remainder)))
     }
 
-    /// Converts the polynomial to a string representation.
-    ///
-    /// # Returns
-    ///
-    /// A string representation of the polynomial in standard form
-    ///
-    /// # Details
-    ///
-    /// The polynomial is displayed in standard form with terms in descending
-    /// order of degree. Zero terms are omitted.
-    pub fn to_string(&self) -> String {
-        if self.coefficients.is_empty() {
-            return "0".to_string();
-        }
-
-        let mut terms = Vec::new();
-        for (i, &coeff) in self.coefficients.iter().enumerate() {
-            if !coeff.is_zero() {
-                let term = if i == 0 {
-                    format!("{}", coeff)
-                } else if i == 1 {
-                    format!("{}x", coeff)
-                } else {
-                    format!("{}x^{}", coeff, i)
-                };
-                terms.push(term);
-            }
-        }
-
-        if terms.is_empty() {
-            "0".to_string()
-        } else {
-            terms.join(" + ")
-        }
-    }
-
     /// Adds two polynomials.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The polynomial to add
-    ///
-    /// # Returns
-    ///
-    /// The sum of the two polynomials
-    ///
-    /// # Details
-    ///
-    /// Addition is performed coefficient-wise over the finite field.
     pub fn add(&self, other: &Polynomial) -> Polynomial {
         let max_len = std::cmp::max(self.coefficients.len(), other.coefficients.len());
         let mut result = vec![Fr::zero(); max_len];
 
-        for i in 0..self.coefficients.len() {
-            result[i] += self.coefficients[i];
+        for (i, coeff) in result.iter_mut().enumerate().take(self.coefficients.len()) {
+            *coeff += self.coefficients[i];
         }
 
-        for i in 0..other.coefficients.len() {
-            result[i] += other.coefficients[i];
+        for (i, coeff) in result.iter_mut().enumerate().take(other.coefficients.len()) {
+            *coeff += other.coefficients[i];
         }
 
         Polynomial::new(result)
     }
 
     /// Multiplies two polynomials.
-    ///
-    /// # Arguments
-    ///
-    /// * `other` - The polynomial to multiply by
-    ///
-    /// # Returns
-    ///
-    /// The product of the two polynomials
-    ///
-    /// # Details
-    ///
-    /// Multiplication is performed using the standard polynomial multiplication
-    /// algorithm over the finite field.
     pub fn multiply(&self, other: &Polynomial) -> Polynomial {
         if self.coefficients.is_empty() || other.coefficients.is_empty() {
             return Polynomial::new(vec![]);
@@ -226,7 +159,7 @@ impl Polynomial {
         Polynomial::new(result)
     }
 
-    /// Evaluates the polynomial at a given point.
+    /// Evaluates the polynomial at point x.
     ///
     /// # Arguments
     ///
@@ -251,7 +184,7 @@ impl Polynomial {
         result
     }
 
-    /// Converts a dense polynomial from the ark-poly crate to our polynomial type.
+    /// Creates a polynomial from a dense polynomial.
     ///
     /// # Arguments
     ///
@@ -261,14 +194,63 @@ impl Polynomial {
     ///
     /// A new polynomial with the same coefficients
     pub fn from_dense_poly(poly: DensePolynomial<Fr>) -> Self {
-        Polynomial::new(poly.coeffs)
+        Self::new(poly.coeffs)
     }
 
+    /// Checks if the polynomial is zero.
     pub fn is_zero(&self) -> bool {
         self.coefficients.iter().all(|c| c.is_zero())
     }
 
+    /// Creates the zero polynomial.
+    ///
+    /// # Returns
+    ///
+    /// A polynomial representing zero
     pub fn zero() -> Self {
         Self::new(vec![Fr::zero()])
+    }
+
+    /// Returns polynomial coefficients.
+    ///
+    /// # Returns
+    ///
+    /// A slice containing the polynomial coefficients
+    ///
+    /// # Security Note
+    ///
+    /// The current implementation exposes the raw coefficients, which may leak
+    /// information about the trace. In a zero-knowledge implementation, these
+    /// should be committed to using a Merkle tree.
+    pub fn coefficients(&self) -> &[Fr] {
+        &self.coefficients
+    }
+}
+
+impl fmt::Display for Polynomial {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.coefficients.is_empty() {
+            return write!(f, "0");
+        }
+
+        let mut terms = Vec::new();
+        for (i, &coeff) in self.coefficients.iter().enumerate() {
+            if !coeff.is_zero() {
+                let term = if i == 0 {
+                    format!("{}", coeff)
+                } else if i == 1 {
+                    format!("{}x", coeff)
+                } else {
+                    format!("{}x^{}", coeff, i)
+                };
+                terms.push(term);
+            }
+        }
+
+        if terms.is_empty() {
+            write!(f, "0")
+        } else {
+            write!(f, "{}", terms.join(" + "))
+        }
     }
 }

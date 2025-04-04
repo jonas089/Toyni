@@ -1,62 +1,24 @@
-//! Execution trace module for the virtual machine.
+//! Execution trace recording for virtual machine.
 //!
-//! This module provides functionality for recording and displaying the execution trace
-//! of a program running in the virtual machine. The trace is represented as a matrix
-//! where each column represents a program variable and each row represents a step
-//! in the program's execution.
-//!
-//! The `ExecutionTrace` struct provides methods to:
-//! - Create new traces with specified dimensions
-//! - Insert new execution steps
-//! - Retrieve execution steps by index
-//! - Print the trace in a tabular format
-//!
-//! This module is particularly useful for debugging and analyzing program execution
-//! by tracking the values of program variables throughout the execution steps.
+//! Records program execution as a matrix where columns are variables and rows are execution steps.
 
 use std::collections::HashMap;
 
-/// Type alias for program variable names.
+/// Program variable name type.
 pub type ProgramVariable = String;
 
-/// Represents the execution trace of a program.
-///
-/// The trace is stored as a vector of HashMaps, where each HashMap represents a column
-/// in the execution trace. Each column maps program variable names to their values at
-/// that step of execution.
-///
-/// # Fields
-///
-/// * `height` - The number of execution steps in the trace
-/// * `width` - The number of program variables being tracked
-/// * `trace` - The actual trace data, stored as a vector of HashMaps
-///
-/// # Invariants
-///
-/// * The length of each column in the trace must equal the width
-/// * The number of columns in the trace must not exceed the height
-/// * All columns must contain the same set of variables
+/// Execution trace storing program state changes.
 pub struct ExecutionTrace {
+    /// Number of execution steps
     pub height: u64,
+    /// Number of program variables
     pub width: u64,
+    /// Trace data as vector of variable-value maps
     pub trace: Vec<HashMap<ProgramVariable, u64>>,
 }
 
 impl ExecutionTrace {
-    /// Creates a new empty execution trace with the specified dimensions.
-    ///
-    /// # Arguments
-    ///
-    /// * `height` - The number of execution steps to allocate
-    /// * `width` - The number of program variables to track
-    ///
-    /// # Returns
-    ///
-    /// A new `ExecutionTrace` instance with the specified dimensions
-    ///
-    /// # Panics
-    ///
-    /// This function will not panic
+    /// Creates empty trace with given dimensions.
     pub fn new(height: u64, width: u64) -> Self {
         Self {
             height,
@@ -65,61 +27,19 @@ impl ExecutionTrace {
         }
     }
 
-    /// Inserts a new column into the execution trace.
-    ///
-    /// # Arguments
-    ///
-    /// * `column` - A HashMap mapping program variables to their values for this step
-    ///
-    /// # Panics
-    ///
-    /// Panics if:
-    /// * The number of variables in the column doesn't match the trace width
-    /// * The trace has reached its maximum height
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the column contains all required variables
-    /// and that their values are valid for the program's context.
+    /// Adds new execution step to trace.
     pub fn insert_column(&mut self, column: HashMap<ProgramVariable, u64>) {
         assert!(column.len() == self.width as usize);
         assert!(self.trace.len() < self.height as usize);
         self.trace.push(column);
     }
 
-    /// Retrieves a column from the execution trace by index.
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The index of the column to retrieve
-    ///
-    /// # Returns
-    ///
-    /// A reference to the HashMap containing the variable values for that step
-    ///
-    /// # Panics
-    ///
-    /// Panics if the index is out of bounds
+    /// Gets execution step by index.
     pub fn get_column(&self, index: u64) -> &HashMap<ProgramVariable, u64> {
         &self.trace[index as usize]
     }
 
-    /// Prints the execution trace in a tabular format.
-    ///
-    /// # Arguments
-    ///
-    /// * `variables` - A vector of variable names specifying the order in which to print them
-    ///
-    /// # Format
-    ///
-    /// The output is formatted as a table where:
-    /// - Each row represents an execution step
-    /// - Each column represents a variable
-    /// - Values are separated by the '|' character
-    ///
-    /// # Note
-    ///
-    /// Variables not present in the trace will be printed as empty values.
+    /// Prints trace in tabular format.
     pub fn print_trace(&self, variables: Vec<ProgramVariable>) {
         for i in 0..self.height {
             let column = self.get_column(i);
@@ -130,25 +50,7 @@ impl ExecutionTrace {
         }
     }
 
-    /// Interpolates a value between two execution steps for a given variable.
-    ///
-    /// # Arguments
-    ///
-    /// * `variable` - The name of the variable to interpolate
-    /// * `step1` - The first execution step index
-    /// * `step2` - The second execution step index
-    /// * `t` - The interpolation parameter between 0 and 100 (representing percentage)
-    ///
-    /// # Returns
-    ///
-    /// The interpolated value between the two steps
-    ///
-    /// # Panics
-    ///
-    /// Panics if:
-    /// * Either step index is out of bounds
-    /// * The variable is not present in the trace
-    /// * The interpolation parameter t is not between 0 and 100
+    /// Interpolates variable value between two steps.
     pub fn interpolate(&self, variable: &ProgramVariable, step1: u64, step2: u64, t: u8) -> u64 {
         assert!(
             step1 < self.height && step2 < self.height,
@@ -169,8 +71,6 @@ impl ExecutionTrace {
             .get(variable)
             .expect("Variable not found in second step");
 
-        // Integer interpolation: val1 + (t * (val2 - val1)) / 100
-        // We need to handle the division carefully to avoid truncation errors
         let diff = val2 - val1;
         let scaled_diff = (diff * (t as u64)) / 100;
         val1 + scaled_diff

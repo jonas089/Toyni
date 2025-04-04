@@ -1,30 +1,6 @@
-//! Composition polynomial operations for the STARK proving system.
+//! Composition polynomial for STARK proofs.
 //!
-//! This module provides functionality for creating and manipulating composition polynomials
-//! in the STARK proving system. The composition polynomial combines the execution trace
-//! with the constraint system to create a single polynomial that encodes all the
-//! program's constraints.
-//!
-//! # Mathematical Details
-//!
-//! The composition polynomial H(x) is constructed as:
-//! H(x) = T(x) + Z_H(x) * sum(C_i(x))
-//! where:
-//! - T(x) is the trace polynomial
-//! - Z_H(x) is the vanishing polynomial over the evaluation domain
-//! - C_i(x) are the constraint polynomials
-//!
-//! # Security Considerations
-//!
-//! The current implementation:
-//! - Does not include random masks for zero-knowledge
-//! - Exposes the full trace polynomial
-//! - Uses direct polynomial evaluation instead of commitments
-//!
-//! To achieve zero-knowledge properties, we need to:
-//! - Add random masks to the composition polynomial
-//! - Commit to the trace polynomial using Merkle trees
-//! - Use polynomial commitments for evaluation
+//! Combines trace and constraints into H(x) = T(x) + Z_H(x) * sum(C_i(x)).
 
 use ark_bls12_381::Fr;
 use ark_ff::{Field, One, Zero};
@@ -34,34 +10,16 @@ use ark_poly::{
 
 use crate::vm::{constraints::ConstraintSystem, trace::ExecutionTrace};
 
-/// Represents a composition polynomial in the STARK proving system.
-///
-/// The composition polynomial combines:
-/// 1. The trace polynomial T(x)
-/// 2. The constraint polynomials C_i(x)
-/// 3. The vanishing polynomial Z_H(x)
-///
-/// The final composition is:
-/// H(x) = T(x) + Z_H(x) * sum(C_i(x))
-///
-/// This polynomial is used to prove that the execution trace satisfies all constraints
-/// and that the program executed correctly.
-///
-/// # Security Note
-///
-/// The current implementation is not zero-knowledge because:
-/// - The trace polynomial is exposed
-/// - No random masks are used
-/// - The composition is not blinded
+/// Polynomial combining trace and constraints for STARK proofs.
 pub struct CompositionPolynomial {
     /// The composed polynomial H(x)
     polynomial: DensePolynomial<Fr>,
-    /// The evaluation domain over which the polynomial is defined
+    /// The evaluation domain
     domain: GeneralEvaluationDomain<Fr>,
 }
 
 impl CompositionPolynomial {
-    /// Creates a new composition polynomial from a trace and constraints.
+    /// Creates composition polynomial from trace and constraints.
     ///
     /// # Arguments
     ///
@@ -95,13 +53,13 @@ impl CompositionPolynomial {
 
         // First, evaluate constraints on the original domain points
         let original_size = trace.height as usize;
-        for i in 0..original_size {
+        for (i, eval) in constraint_evals.iter_mut().enumerate().take(original_size) {
             let current_row = trace.get_column(i as u64);
             let next_row = trace.get_column(((i + 1) % original_size) as u64);
 
             for constraint in &constraints.transition_constraints {
-                let eval = (constraint.evaluate)(current_row, next_row);
-                constraint_evals[i] += eval;
+                let constraint_eval = (constraint.evaluate)(current_row, next_row);
+                *eval += constraint_eval;
             }
         }
 
@@ -133,11 +91,11 @@ impl CompositionPolynomial {
         // Create the vanishing polynomial Z_H(x)
         let mut z_h_evals = vec![Fr::one(); domain.size()];
         let omega = domain.element(1); // ω is the generator
-        for i in 0..domain.size() {
+        for (i, eval) in z_h_evals.iter_mut().enumerate().take(domain.size()) {
             let x = domain.element(i);
             for j in 0..domain.size() {
-                let omega_j = omega.pow(&[j as u64]);
-                z_h_evals[i] *= x - omega_j;
+                let omega_j = omega.pow([j as u64]);
+                *eval *= x - omega_j;
             }
         }
         let z_h = Evaluations::from_vec_and_domain(z_h_evals, domain).interpolate();
@@ -151,7 +109,7 @@ impl CompositionPolynomial {
         }
     }
 
-    /// Creates a composition polynomial from pre-computed evaluations.
+    /// Creates polynomial from pre-computed evaluations.
     ///
     /// # Arguments
     ///
@@ -169,7 +127,7 @@ impl CompositionPolynomial {
         }
     }
 
-    /// Returns the degree of the composition polynomial.
+    /// Returns polynomial degree.
     ///
     /// The degree is important for:
     /// - FRI low-degree testing
@@ -183,7 +141,7 @@ impl CompositionPolynomial {
         self.polynomial.degree()
     }
 
-    /// Evaluates the composition polynomial at a point.
+    /// Evaluates polynomial at point.
     ///
     /// # Arguments
     ///
@@ -196,7 +154,7 @@ impl CompositionPolynomial {
         self.polynomial.evaluate(&point)
     }
 
-    /// Returns the coefficients of the composition polynomial.
+    /// Returns polynomial coefficients.
     ///
     /// # Returns
     ///
@@ -211,7 +169,7 @@ impl CompositionPolynomial {
         &self.polynomial.coeffs
     }
 
-    /// Returns evaluations of the composition polynomial over its domain.
+    /// Returns evaluations over domain.
     ///
     /// # Returns
     ///
@@ -243,14 +201,14 @@ mod tests {
         }
 
         // Create constraint system: x[n] = x[n-1] + 1
-        let mut constraints = ConstraintSystem::new();
+        let mut constraints = ConstraintSystem::default();
         constraints.add_transition_constraint(
             "increment".to_string(),
             vec!["x".to_string()],
             Box::new(|current, next| {
                 let x_current = current.get("x").unwrap();
                 let x_next = next.get("x").unwrap();
-                Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1)
+                Fr::from(*x_next) - Fr::from(*x_current + 1)
             }),
         );
 
@@ -274,7 +232,7 @@ mod tests {
             let next_row = trace.get_column(i + 1);
             let x_current = current_row.get("x").unwrap();
             let x_next = next_row.get("x").unwrap();
-            let eval = Fr::from(*x_next as u64) - Fr::from(*x_current as u64 + 1);
+            let eval = Fr::from(*x_next) - Fr::from(*x_current + 1);
             println!("C[{}] = {}", i, eval);
         }
 
