@@ -13,6 +13,8 @@ Welcome to Toyni! This is an implementation of a STARK (Scalable Transparent Arg
 
 ![toyniii](art/toyniii.jpg)
 
+Meet the amazing artist behind this creation, [Kristiana Skrastina](https://www.linkedin.com/in/kristiana-skrastina/)
+
 
 ## 0. Background, STARK Verifier: Constraint vs FRI Layer Checks
 
@@ -131,9 +133,6 @@ Use `n = 64–80` spot checks for strong 128-bit soundness across typical domain
 | Constraint Check   | `Q(x) * Z(x) == C(x)`          | Optional       | ❌ No             |
 | FRI Layer Check    | Folding consistency, low-degree| ✅ Yes          | ✅ Yes            |
 
-
-
-Meet the amazing artist behind this creation, [Kristiana Skrastina](https://www.linkedin.com/in/kristiana-skrastina/)
 
 ## 1. Introduction
 
