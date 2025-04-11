@@ -13,4 +13,5 @@
 //! * `vm` - Virtual machine implementation with execution tracing
 
 pub mod math;
+pub mod merkle;
 pub mod vm;
